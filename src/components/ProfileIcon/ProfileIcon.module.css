@@ -1,0 +1,57 @@
+.profileContainer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 0px;
+  gap: min(3vw, 12px);
+  width: 100%;
+}
+
+.nameText {
+  color: #f3f3f3;
+  font-size: clamp(14px, 4vw, 16px);
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.profileIcon {
+  width: min(15vw, 58px);
+  height: min(15vw, 58px);
+  border-radius: 50%;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.whiteOutline {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #f3f3f3;
+  padding: min(1vw, 4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.blackRing {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #000000;
+  padding: min(0.8vw, 3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gradientCircle {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--aquamarine) 0%,
+    var(--spring-green) 50%,
+    var(--chartreuse) 100%
+  );
+}

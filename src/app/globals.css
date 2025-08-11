@@ -1,0 +1,24 @@
+:root {
+  --lime: #bbff00ff;
+  --green-yellow: #a7ff1bff;
+  --chartreuse: #92ff35ff;
+  --bright-green: #7eff50ff;
+  --screamin-green: #74ff5dff;
+  --screamin-green-2: #69ff6aff;
+  --spring-green: #55ff85ff;
+  --spring-green-2: #40ff9fff;
+  --aquamarine: #2cffbaff;
+  --aquamarine-2: #17ffd4ff;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #343434;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow-x: hidden;
+}

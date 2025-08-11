@@ -1,0 +1,33 @@
+.container {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: #343434;
+  width: 100vw;
+  padding: 0;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+.mobileWrapper {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: #343434;
+  position: relative;
+  padding: min(5vw, 20px);
+  box-sizing: border-box;
+  max-width: 100vw;
+}
+
+@media (min-width: 768px) {
+  .container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .mobileWrapper {
+    max-width: 500px;
+    padding: 20px;
+  }
+}

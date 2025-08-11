@@ -1,0 +1,191 @@
+.calendarContainer {
+  position: relative;
+  background-color: rgba(243, 243, 243, 0.05);
+  border-radius: 24px;
+  padding: 24px 24px 24px 24px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(243, 243, 243, 0.1);
+  overflow: hidden;
+  height: 360px;
+}
+
+.calendarContent {
+  transition: all 0.3s ease;
+}
+
+.expanded {
+  height: 360px;
+}
+
+.infiniteScroll {
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.infiniteScroll::-webkit-scrollbar {
+  display: none;
+}
+
+.monthContainer {
+  margin-bottom: 32px;
+}
+
+.monthContainer:last-child {
+  margin-bottom: 0;
+}
+
+.monthHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.monthTitle {
+  color: #f3f3f3;
+  font-size: 18px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.monthNavigation {
+  display: flex;
+  gap: 8px;
+}
+
+.navButton {
+  background: #000000; /* Black background */
+  border: 2px solid #f3f3f3;
+  color: #f3f3f3; /* White symbols */
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.navButton:hover {
+  background: #333333;
+}
+
+.weekDays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.weekDay {
+  color: #f3f3f3;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  opacity: 0.6;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.monthGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  place-items: center; /* <-- This centers content both vertically and horizontally */
+}
+
+.day {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f3f3f3;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  border-radius: 50%;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.day:hover {
+  background-color: rgba(243, 243, 243, 0.1);
+  border-color: rgba(243, 243, 243, 0.2);
+}
+
+.dayInactive {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.dayInactive:hover {
+  background-color: rgba(102, 102, 102, 0.1);
+  border-color: rgba(102, 102, 102, 0.2);
+}
+
+.today {
+  background: #ededed; /* White fill */
+  color: #000000; /* Black text */
+  font-weight: 600;
+  border: 2px solid #000000; /* Black outline */
+}
+
+.selected {
+  background: rgba(243, 243, 243, 0.2);
+  border: 2px solid #f3f3f3;
+  font-weight: 600;
+}
+
+.eventDot {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: linear-gradient(135deg, #ec4899, #be185d);
+  border-radius: 50%;
+}
+
+.expandButton {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #000000; /* Black background */
+  border: 2px solid #f3f3f3;
+  color: #f3f3f3; /* White symbols */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.expandButton:hover {
+  /* transform: translateX(-50%) scale(1.05); */
+  background: #333333;
+}
+
+.expandButton:active {
+  transform: translateX(-50%) scale(0.95);
+}
