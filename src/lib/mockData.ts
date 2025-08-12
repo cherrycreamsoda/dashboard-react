@@ -1,238 +1,502 @@
 // Mock data for August 2025 - 6 weeks from July 27 to September 6
-// Week structure: Sunday to Saturday
+// Restructured to day-based for both weekly and monthly views
 
-export interface WeeklyChartData {
-  week: number
-  startDate: string
-  endDate: string
-  income: {
-    data: Array<{
-      day: string
-      value: number
-      fullDay: string
-      date: string
-    }>
-    total: number
-  }
-  expense: {
-    data: Array<{
-      day: string
-      value: number
-      fullDay: string
-      date: string
-    }>
-    total: number
-  }
+export interface DayData {
+  date: string; // YYYY-MM-DD format
+  dayOfWeek: string; // Sun, Mon, Tue, etc.
+  fullDayName: string; // Sunday, Monday, etc.
+  dayOfMonth: number; // 1-31
+  income: number;
+  expense: number;
+  week: number; // Which week this day belongs to (1-6)
 }
 
-// August 2025 weekly data with dramatic fluctuations between weeks
-export const august2025Data: WeeklyChartData[] = [
-  // Week 1: July 27 - August 2, 2025 (High income week)
+export interface WeeklyChartData {
+  week: number;
+  startDate: string;
+  endDate: string;
+  income: {
+    data: Array<{
+      day: string;
+      value: number;
+      fullDay: string;
+      date: string;
+    }>;
+    total: number;
+  };
+  expense: {
+    data: Array<{
+      day: string;
+      value: number;
+      fullDay: string;
+      date: string;
+    }>;
+    total: number;
+  };
+}
+
+export const august2025DailyData: DayData[] = [
+  // Week 1: July 27 - August 2, 2025
   {
+    date: "2025-07-27",
+    dayOfWeek: "Sun",
+    fullDayName: "Sunday",
+    dayOfMonth: 27,
+    income: 320,
+    expense: 180,
     week: 1,
-    startDate: "2025-07-27",
-    endDate: "2025-08-02",
-    income: {
-      data: [
-        { day: "Sun", value: 280, fullDay: "Sunday", date: "2025-07-27" },
-        { day: "Mon", value: 1450, fullDay: "Monday", date: "2025-07-28" },
-        { day: "Tue", value: 920, fullDay: "Tuesday", date: "2025-07-29" },
-        { day: "Wed", value: 1240, fullDay: "Wednesday", date: "2025-07-30" },
-        { day: "Thu", value: 1650, fullDay: "Thursday", date: "2025-07-31" },
-        { day: "Fri", value: 880, fullDay: "Friday", date: "2025-08-01" },
-        { day: "Sat", value: 420, fullDay: "Saturday", date: "2025-08-02" },
-      ],
-      total: 0,
-    },
-    expense: {
-      data: [
-        { day: "Sun", value: 180, fullDay: "Sunday", date: "2025-07-27" },
-        { day: "Mon", value: 680, fullDay: "Monday", date: "2025-07-28" },
-        { day: "Tue", value: 440, fullDay: "Tuesday", date: "2025-07-29" },
-        { day: "Wed", value: 820, fullDay: "Wednesday", date: "2025-07-30" },
-        { day: "Thu", value: 390, fullDay: "Thursday", date: "2025-07-31" },
-        { day: "Fri", value: 780, fullDay: "Friday", date: "2025-08-01" },
-        { day: "Sat", value: 580, fullDay: "Saturday", date: "2025-08-02" },
-      ],
-      total: 0,
-    },
+  },
+  {
+    date: "2025-07-28",
+    dayOfWeek: "Mon",
+    fullDayName: "Monday",
+    dayOfMonth: 28,
+    income: 1250,
+    expense: 620,
+    week: 1,
+  },
+  {
+    date: "2025-07-29",
+    dayOfWeek: "Tue",
+    fullDayName: "Tuesday",
+    dayOfMonth: 29,
+    income: 1180,
+    expense: 580,
+    week: 1,
+  },
+  {
+    date: "2025-07-30",
+    dayOfWeek: "Wed",
+    fullDayName: "Wednesday",
+    dayOfMonth: 30,
+    income: 1320,
+    expense: 640,
+    week: 1,
+  },
+  {
+    date: "2025-07-31",
+    dayOfWeek: "Thu",
+    fullDayName: "Thursday",
+    dayOfMonth: 31,
+    income: 1420,
+    expense: 520,
+    week: 1,
+  },
+  {
+    date: "2025-08-01",
+    dayOfWeek: "Fri",
+    fullDayName: "Friday",
+    dayOfMonth: 1,
+    income: 1380,
+    expense: 680,
+    week: 1,
+  },
+  {
+    date: "2025-08-02",
+    dayOfWeek: "Sat",
+    fullDayName: "Saturday",
+    dayOfMonth: 2,
+    income: 480,
+    expense: 420,
+    week: 1,
   },
 
-  // Week 2: August 3 - August 9, 2025 (Low income, high expenses)
+  // Week 2: August 3 - August 9, 2025
   {
+    date: "2025-08-03",
+    dayOfWeek: "Sun",
+    fullDayName: "Sunday",
+    dayOfMonth: 3,
+    income: 280,
+    expense: 320,
     week: 2,
-    startDate: "2025-08-03",
-    endDate: "2025-08-09",
-    income: {
-      data: [
-        { day: "Sun", value: 120, fullDay: "Sunday", date: "2025-08-03" },
-        { day: "Mon", value: 560, fullDay: "Monday", date: "2025-08-04" },
-        { day: "Tue", value: 380, fullDay: "Tuesday", date: "2025-08-05" },
-        { day: "Wed", value: 490, fullDay: "Wednesday", date: "2025-08-06" },
-        { day: "Thu", value: 720, fullDay: "Thursday", date: "2025-08-07" },
-        { day: "Fri", value: 340, fullDay: "Friday", date: "2025-08-08" },
-        { day: "Sat", value: 160, fullDay: "Saturday", date: "2025-08-09" },
-      ],
-      total: 0,
-    },
-    expense: {
-      data: [
-        { day: "Sun", value: 240, fullDay: "Sunday", date: "2025-08-03" },
-        { day: "Mon", value: 950, fullDay: "Monday", date: "2025-08-04" },
-        { day: "Tue", value: 680, fullDay: "Tuesday", date: "2025-08-05" },
-        { day: "Wed", value: 1150, fullDay: "Wednesday", date: "2025-08-06" },
-        { day: "Thu", value: 520, fullDay: "Thursday", date: "2025-08-07" },
-        { day: "Fri", value: 840, fullDay: "Friday", date: "2025-08-08" },
-        { day: "Sat", value: 720, fullDay: "Saturday", date: "2025-08-09" },
-      ],
-      total: 0,
-    },
+  },
+  {
+    date: "2025-08-04",
+    dayOfWeek: "Mon",
+    fullDayName: "Monday",
+    dayOfMonth: 4,
+    income: 980,
+    expense: 720,
+    week: 2,
+  },
+  {
+    date: "2025-08-05",
+    dayOfWeek: "Tue",
+    fullDayName: "Tuesday",
+    dayOfMonth: 5,
+    income: 1120,
+    expense: 680,
+    week: 2,
+  },
+  {
+    date: "2025-08-06",
+    dayOfWeek: "Wed",
+    fullDayName: "Wednesday",
+    dayOfMonth: 6,
+    income: 1080,
+    expense: 740,
+    week: 2,
+  },
+  {
+    date: "2025-08-07",
+    dayOfWeek: "Thu",
+    fullDayName: "Thursday",
+    dayOfMonth: 7,
+    income: 1240,
+    expense: 620,
+    week: 2,
+  },
+  {
+    date: "2025-08-08",
+    dayOfWeek: "Fri",
+    fullDayName: "Friday",
+    dayOfMonth: 8,
+    income: 1160,
+    expense: 780,
+    week: 2,
+  },
+  {
+    date: "2025-08-09",
+    dayOfWeek: "Sat",
+    fullDayName: "Saturday",
+    dayOfMonth: 9,
+    income: 420,
+    expense: 480,
+    week: 2,
   },
 
-  // Week 3: August 10 - August 16, 2025 (Moderate with spikes)
+  // Week 3: August 10 - August 16, 2025
   {
+    date: "2025-08-10",
+    dayOfWeek: "Sun",
+    fullDayName: "Sunday",
+    dayOfMonth: 10,
+    income: 350,
+    expense: 280,
     week: 3,
-    startDate: "2025-08-10",
-    endDate: "2025-08-16",
-    income: {
-      data: [
-        { day: "Sun", value: 350, fullDay: "Sunday", date: "2025-08-10" },
-        { day: "Mon", value: 1820, fullDay: "Monday", date: "2025-08-11" },
-        { day: "Tue", value: 480, fullDay: "Tuesday", date: "2025-08-12" },
-        { day: "Wed", value: 1320, fullDay: "Wednesday", date: "2025-08-13" },
-        { day: "Thu", value: 980, fullDay: "Thursday", date: "2025-08-14" },
-        { day: "Fri", value: 1560, fullDay: "Friday", date: "2025-08-15" },
-        { day: "Sat", value: 290, fullDay: "Saturday", date: "2025-08-16" },
-      ],
-      total: 0,
-    },
-    expense: {
-      data: [
-        { day: "Sun", value: 150, fullDay: "Sunday", date: "2025-08-10" },
-        { day: "Mon", value: 420, fullDay: "Monday", date: "2025-08-11" },
-        { day: "Tue", value: 280, fullDay: "Tuesday", date: "2025-08-12" },
-        { day: "Wed", value: 580, fullDay: "Wednesday", date: "2025-08-13" },
-        { day: "Thu", value: 680, fullDay: "Thursday", date: "2025-08-14" },
-        { day: "Fri", value: 520, fullDay: "Friday", date: "2025-08-15" },
-        { day: "Sat", value: 360, fullDay: "Saturday", date: "2025-08-16" },
-      ],
-      total: 0,
-    },
+  },
+  {
+    date: "2025-08-11",
+    dayOfWeek: "Mon",
+    fullDayName: "Monday",
+    dayOfMonth: 11,
+    income: 1320,
+    expense: 580,
+    week: 3,
+  },
+  {
+    date: "2025-08-12",
+    dayOfWeek: "Tue",
+    fullDayName: "Tuesday",
+    dayOfMonth: 12,
+    income: 1280,
+    expense: 620,
+    week: 3,
+  },
+  {
+    date: "2025-08-13",
+    dayOfWeek: "Wed",
+    fullDayName: "Wednesday",
+    dayOfMonth: 13,
+    income: 1350,
+    expense: 680,
+    week: 3,
+  },
+  {
+    date: "2025-08-14",
+    dayOfWeek: "Thu",
+    fullDayName: "Thursday",
+    dayOfMonth: 14,
+    income: 1420,
+    expense: 720,
+    week: 3,
+  },
+  {
+    date: "2025-08-15",
+    dayOfWeek: "Fri",
+    fullDayName: "Friday",
+    dayOfMonth: 15,
+    income: 1480,
+    expense: 640,
+    week: 3,
+  },
+  {
+    date: "2025-08-16",
+    dayOfWeek: "Sat",
+    fullDayName: "Saturday",
+    dayOfMonth: 16,
+    income: 520,
+    expense: 380,
+    week: 3,
   },
 
-  // Week 4: August 17 - August 23, 2025 (Volatile week)
+  // Week 4: August 17 - August 23, 2025
   {
+    date: "2025-08-17",
+    dayOfWeek: "Sun",
+    fullDayName: "Sunday",
+    dayOfMonth: 17,
+    income: 320,
+    expense: 240,
     week: 4,
-    startDate: "2025-08-17",
-    endDate: "2025-08-23",
-    income: {
-      data: [
-        { day: "Sun", value: 90, fullDay: "Sunday", date: "2025-08-17" },
-        { day: "Mon", value: 2180, fullDay: "Monday", date: "2025-08-18" },
-        { day: "Tue", value: 220, fullDay: "Tuesday", date: "2025-08-19" },
-        { day: "Wed", value: 1850, fullDay: "Wednesday", date: "2025-08-20" },
-        { day: "Thu", value: 320, fullDay: "Thursday", date: "2025-08-21" },
-        { day: "Fri", value: 1290, fullDay: "Friday", date: "2025-08-22" },
-        { day: "Sat", value: 180, fullDay: "Saturday", date: "2025-08-23" },
-      ],
-      total: 0,
-    },
-    expense: {
-      data: [
-        { day: "Sun", value: 320, fullDay: "Sunday", date: "2025-08-17" },
-        { day: "Mon", value: 1240, fullDay: "Monday", date: "2025-08-18" },
-        { day: "Tue", value: 180, fullDay: "Tuesday", date: "2025-08-19" },
-        { day: "Wed", value: 920, fullDay: "Wednesday", date: "2025-08-20" },
-        { day: "Thu", value: 650, fullDay: "Thursday", date: "2025-08-21" },
-        { day: "Fri", value: 480, fullDay: "Friday", date: "2025-08-22" },
-        { day: "Sat", value: 890, fullDay: "Saturday", date: "2025-08-23" },
-      ],
-      total: 0,
-    },
+  },
+  {
+    date: "2025-08-18",
+    dayOfWeek: "Mon",
+    fullDayName: "Monday",
+    dayOfMonth: 18,
+    income: 1180,
+    expense: 780,
+    week: 4,
+  },
+  {
+    date: "2025-08-19",
+    dayOfWeek: "Tue",
+    fullDayName: "Tuesday",
+    dayOfMonth: 19,
+    income: 1220,
+    expense: 720,
+    week: 4,
+  },
+  {
+    date: "2025-08-20",
+    dayOfWeek: "Wed",
+    fullDayName: "Wednesday",
+    dayOfMonth: 20,
+    income: 1380,
+    expense: 680,
+    week: 4,
+  },
+  {
+    date: "2025-08-21",
+    dayOfWeek: "Thu",
+    fullDayName: "Thursday",
+    dayOfMonth: 21,
+    income: 1320,
+    expense: 740,
+    week: 4,
+  },
+  {
+    date: "2025-08-22",
+    dayOfWeek: "Fri",
+    fullDayName: "Friday",
+    dayOfMonth: 22,
+    income: 1450,
+    expense: 620,
+    week: 4,
+  },
+  {
+    date: "2025-08-23",
+    dayOfWeek: "Sat",
+    fullDayName: "Saturday",
+    dayOfMonth: 23,
+    income: 480,
+    expense: 420,
+    week: 4,
   },
 
-  // Week 5: August 24 - August 30, 2025 (Steady growth)
+  // Week 5: August 24 - August 30, 2025
   {
+    date: "2025-08-24",
+    dayOfWeek: "Sun",
+    fullDayName: "Sunday",
+    dayOfMonth: 24,
+    income: 380,
+    expense: 320,
     week: 5,
-    startDate: "2025-08-24",
-    endDate: "2025-08-30",
-    income: {
-      data: [
-        { day: "Sun", value: 450, fullDay: "Sunday", date: "2025-08-24" },
-        { day: "Mon", value: 1260, fullDay: "Monday", date: "2025-08-25" },
-        { day: "Tue", value: 1480, fullDay: "Tuesday", date: "2025-08-26" },
-        { day: "Wed", value: 1620, fullDay: "Wednesday", date: "2025-08-27" },
-        { day: "Thu", value: 1840, fullDay: "Thursday", date: "2025-08-28" },
-        { day: "Fri", value: 1920, fullDay: "Friday", date: "2025-08-29" },
-        { day: "Sat", value: 680, fullDay: "Saturday", date: "2025-08-30" },
-      ],
-      total: 0,
-    },
-    expense: {
-      data: [
-        { day: "Sun", value: 220, fullDay: "Sunday", date: "2025-08-24" },
-        { day: "Mon", value: 540, fullDay: "Monday", date: "2025-08-25" },
-        { day: "Tue", value: 620, fullDay: "Tuesday", date: "2025-08-26" },
-        { day: "Wed", value: 480, fullDay: "Wednesday", date: "2025-08-27" },
-        { day: "Thu", value: 720, fullDay: "Thursday", date: "2025-08-28" },
-        { day: "Fri", value: 580, fullDay: "Friday", date: "2025-08-29" },
-        { day: "Sat", value: 380, fullDay: "Saturday", date: "2025-08-30" },
-      ],
-      total: 0,
-    },
   },
-
-  // Week 6: August 31 - September 6, 2025 (Mixed patterns)
   {
+    date: "2025-08-25",
+    dayOfWeek: "Mon",
+    fullDayName: "Monday",
+    dayOfMonth: 25,
+    income: 1280,
+    expense: 680,
+    week: 5,
+  },
+  {
+    date: "2025-08-26",
+    dayOfWeek: "Tue",
+    fullDayName: "Tuesday",
+    dayOfMonth: 26,
+    income: 1350,
+    expense: 720,
+    week: 5,
+  },
+  {
+    date: "2025-08-27",
+    dayOfWeek: "Wed",
+    fullDayName: "Wednesday",
+    dayOfMonth: 27,
+    income: 1420,
+    expense: 640,
+    week: 5,
+  },
+  {
+    date: "2025-08-28",
+    dayOfWeek: "Thu",
+    fullDayName: "Thursday",
+    dayOfMonth: 28,
+    income: 1480,
+    expense: 780,
+    week: 5,
+  },
+  {
+    date: "2025-08-29",
+    dayOfWeek: "Fri",
+    fullDayName: "Friday",
+    dayOfMonth: 29,
+    income: 1520,
+    expense: 680,
+    week: 5,
+  },
+  {
+    date: "2025-08-30",
+    dayOfWeek: "Sat",
+    fullDayName: "Saturday",
+    dayOfMonth: 30,
+    income: 520,
+    expense: 380,
+    week: 5,
+  },
+
+  // Week 6: August 31 - September 6, 2025
+  {
+    date: "2025-08-31",
+    dayOfWeek: "Sun",
+    fullDayName: "Sunday",
+    dayOfMonth: 31,
+    income: 350,
+    expense: 420,
     week: 6,
-    startDate: "2025-08-31",
-    endDate: "2025-09-06",
+  },
+  {
+    date: "2025-09-01",
+    dayOfWeek: "Mon",
+    fullDayName: "Monday",
+    dayOfMonth: 1,
+    income: 1120,
+    expense: 720,
+    week: 6,
+  },
+  {
+    date: "2025-09-02",
+    dayOfWeek: "Tue",
+    fullDayName: "Tuesday",
+    dayOfMonth: 2,
+    income: 1280,
+    expense: 680,
+    week: 6,
+  },
+  {
+    date: "2025-09-03",
+    dayOfWeek: "Wed",
+    fullDayName: "Wednesday",
+    dayOfMonth: 3,
+    income: 1180,
+    expense: 780,
+    week: 6,
+  },
+  {
+    date: "2025-09-04",
+    dayOfWeek: "Thu",
+    fullDayName: "Thursday",
+    dayOfMonth: 4,
+    income: 1350,
+    expense: 620,
+    week: 6,
+  },
+  {
+    date: "2025-09-05",
+    dayOfWeek: "Fri",
+    fullDayName: "Friday",
+    dayOfMonth: 5,
+    income: 1420,
+    expense: 740,
+    week: 6,
+  },
+  {
+    date: "2025-09-06",
+    dayOfWeek: "Sat",
+    fullDayName: "Saturday",
+    dayOfMonth: 6,
+    income: 480,
+    expense: 520,
+    week: 6,
+  },
+];
+
+export const getAugust2025Data = (): DayData[] => {
+  return august2025DailyData.filter((day) => {
+    const date = new Date(day.date);
+    return date.getMonth() === 7 && date.getFullYear() === 2025; // August = month 7
+  });
+};
+
+export const getWeeklyDataFromDaily = (
+  weekNumber: number
+): WeeklyChartData | null => {
+  const weekDays = august2025DailyData.filter((day) => day.week === weekNumber);
+
+  if (weekDays.length === 0) return null;
+
+  const startDate = weekDays[0].date;
+  const endDate = weekDays[weekDays.length - 1].date;
+
+  return {
+    week: weekNumber,
+    startDate,
+    endDate,
     income: {
-      data: [
-        { day: "Sun", value: 240, fullDay: "Sunday", date: "2025-08-31" },
-        { day: "Mon", value: 780, fullDay: "Monday", date: "2025-09-01" },
-        { day: "Tue", value: 1680, fullDay: "Tuesday", date: "2025-09-02" },
-        { day: "Wed", value: 420, fullDay: "Wednesday", date: "2025-09-03" },
-        { day: "Thu", value: 1960, fullDay: "Thursday", date: "2025-09-04" },
-        { day: "Fri", value: 580, fullDay: "Friday", date: "2025-09-05" },
-        { day: "Sat", value: 1120, fullDay: "Saturday", date: "2025-09-06" },
-      ],
-      total: 0,
+      data: weekDays.map((day) => ({
+        day: day.dayOfWeek,
+        value: day.income,
+        fullDay: day.fullDayName,
+        date: day.date,
+      })),
+      total:
+        Math.round(weekDays.reduce((sum, day) => sum + day.income, 0) * 100) /
+        100,
     },
     expense: {
-      data: [
-        { day: "Sun", value: 460, fullDay: "Sunday", date: "2025-08-31" },
-        { day: "Mon", value: 820, fullDay: "Monday", date: "2025-09-01" },
-        { day: "Tue", value: 340, fullDay: "Tuesday", date: "2025-09-02" },
-        { day: "Wed", value: 1180, fullDay: "Wednesday", date: "2025-09-03" },
-        { day: "Thu", value: 280, fullDay: "Thursday", date: "2025-09-04" },
-        { day: "Fri", value: 920, fullDay: "Friday", date: "2025-09-05" },
-        { day: "Sat", value: 640, fullDay: "Saturday", date: "2025-09-06" },
-      ],
-      total: 0,
+      data: weekDays.map((day) => ({
+        day: day.dayOfWeek,
+        value: day.expense,
+        fullDay: day.fullDayName,
+        date: day.date,
+      })),
+      total:
+        Math.round(weekDays.reduce((sum, day) => sum + day.expense, 0) * 100) /
+        100,
     },
-  },
-]
+  };
+};
 
-// Calculate totals for each week
-august2025Data.forEach((week) => {
-  week.income.total = Math.round(week.income.data.reduce((sum, item) => sum + item.value, 0) * 100) / 100
-  week.expense.total = Math.round(week.expense.data.reduce((sum, item) => sum + item.value, 0) * 100) / 100
-})
+export const getAllWeeklyData = (): WeeklyChartData[] => {
+  const weeks: WeeklyChartData[] = [];
+  for (let i = 1; i <= 6; i++) {
+    const weekData = getWeeklyDataFromDaily(i);
+    if (weekData) weeks.push(weekData);
+  }
+  return weeks;
+};
 
 // Helper function to get week number from date
 export const getWeekFromDate = (date: Date): number => {
   // August 2025 weeks start from July 27, 2025 (Sunday)
-  const startDate = new Date(2025, 6, 27) // July 27, 2025
-  const diffTime = date.getTime() - startDate.getTime()
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-  const weekNumber = Math.floor(diffDays / 7) + 1
+  const startDate = new Date(2025, 6, 27); // July 27, 2025
+  const diffTime = date.getTime() - startDate.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const weekNumber = Math.floor(diffDays / 7) + 1;
 
   // Clamp to valid week range (1-6)
-  return Math.max(1, Math.min(6, weekNumber))
-}
+  return Math.max(1, Math.min(6, weekNumber));
+};
 
 // Helper function to get week data by week number
 export const getWeekData = (weekNumber: number): WeeklyChartData | null => {
-  return august2025Data.find((week) => week.week === weekNumber) || null
-}
+  return getWeeklyDataFromDaily(weekNumber);
+};
+
+export const august2025Data: WeeklyChartData[] = getAllWeeklyData();

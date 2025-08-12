@@ -1,19 +1,23 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import styles from "./Chart.module.css";
+import { getAugust2025Data } from "@/lib/mockData";
 
 interface ChartDataPoint {
   day: string;
   value: number;
   fullDay: string;
+  date?: string;
 }
 
 interface ChartProps {
   dataType: "income" | "expense";
-  selectedWeek: number; // Added selectedWeek prop
-  allWeeksData: WeekData[]; // Added allWeeksData prop
+  selectedWeek: number;
+  allWeeksData: WeekData[];
   selectedDay?: number | null;
   onDayChange?: (dayIndex: number) => void;
+  viewMode: "yearly" | "monthly" | "weekly";
+  monthlyData?: any; // Added monthlyData prop
 }
 
 interface WeekData {
@@ -36,6 +40,7 @@ interface AnimatedDataPoint {
   currentValue: number;
   targetValue: number;
   fullDay: string;
+  date?: string;
 }
 
 export default function Chart({
@@ -44,6 +49,8 @@ export default function Chart({
   allWeeksData,
   selectedDay,
   onDayChange,
+  viewMode,
+  monthlyData, // Added monthlyData prop
 }: ChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
@@ -58,21 +65,40 @@ export default function Chart({
   const [minValue, setMinValue] = useState<number>(0);
   const [valueRange, setValueRange] = useState<number>(1);
 
-  const currentWeekData = allWeeksData.find(
-    (week) => week.week === selectedWeek
-  );
-  const currentData = currentWeekData
-    ? dataType === "income"
-      ? currentWeekData.income.data
-      : currentWeekData.expense.data
-    : [];
+  const getCurrentData = () => {
+    if (viewMode === "monthly") {
+      if (monthlyData) {
+        return dataType === "income"
+          ? monthlyData.income.data
+          : monthlyData.expense.data;
+      }
+      const august2025Data = getAugust2025Data();
+      return august2025Data.map((day, index) => ({
+        day: day.dayOfMonth.toString(),
+        value: dataType === "income" ? day.income : day.expense,
+        fullDay: `${day.fullDayName}, Aug ${day.dayOfMonth}`,
+        date: day.date,
+      }));
+    } else {
+      // Weekly view
+      const currentWeekData = allWeeksData.find(
+        (week) => week.week === selectedWeek
+      );
+      return currentWeekData
+        ? dataType === "income"
+          ? currentWeekData.income.data
+          : currentWeekData.expense.data
+        : [];
+    }
+  };
+
+  const currentData = getCurrentData();
 
   const allIncomeData = allWeeksData.flatMap((week) => week.income.data);
   const allExpenseData = allWeeksData.flatMap((week) => week.expense.data);
 
-  const ANIMATION_DURATION = 1200; // 1.2 seconds for smooth animation
+  const ANIMATION_DURATION = 1200;
 
-  // Easing function - cubic ease-in-out for smooth start and end
   const easeInOutCubic = (t: number): number => {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   };
@@ -80,7 +106,6 @@ export default function Chart({
   useEffect(() => {
     if (currentData.length === 0) return;
 
-    // First time initialization
     if (animatedData.length === 0) {
       const initialData = currentData.map((item) => ({
         day: item.day,
@@ -88,6 +113,7 @@ export default function Chart({
         currentValue: item.value,
         targetValue: item.value,
         fullDay: item.fullDay,
+        date: item.date,
       }));
       setAnimatedData(initialData);
       previousDataRef.current = [...currentData];
@@ -98,16 +124,16 @@ export default function Chart({
       JSON.stringify(previousDataRef.current) !== JSON.stringify(currentData);
 
     if (hasDataChanged) {
-      // Preserve current animated values as start values for smooth transition
       const newAnimatedData = currentData.map((item, index) => {
         const currentAnimatedValue =
           animatedData[index]?.currentValue ?? item.value;
         return {
           day: item.day,
-          startValue: currentAnimatedValue, // Use current animated position as start
+          startValue: currentAnimatedValue,
           currentValue: currentAnimatedValue,
           targetValue: item.value,
           fullDay: item.fullDay,
+          date: item.date,
         };
       });
 
@@ -143,7 +169,6 @@ export default function Chart({
           animationRef.current = requestAnimationFrame(animateValues);
         } else {
           setIsAnimating(false);
-          // Ensure final values are exactly the target values
           setAnimatedData((prev) =>
             prev.map((item) => ({
               ...item,
@@ -165,7 +190,7 @@ export default function Chart({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [currentData, animatedData.length]); // Now triggers on both dataType and selectedWeek changes
+  }, [currentData, animatedData.length, viewMode]);
 
   const drawChart = () => {
     const canvas = canvasRef.current;
@@ -209,6 +234,7 @@ export default function Chart({
       value: data.currentValue,
       day: data.day,
       fullDay: data.fullDay,
+      date: data.date,
     }));
 
     // Draw vertical lines
@@ -228,10 +254,25 @@ export default function Chart({
       0,
       height - paddingBottom
     );
-    gradient.addColorStop(0, "rgba(147, 51, 234, 0.9)");
-    gradient.addColorStop(0.3, "rgba(147, 51, 234, 0.6)");
-    gradient.addColorStop(0.7, "rgba(120, 120, 120, 0.3)");
-    gradient.addColorStop(1, "rgba(100, 100, 100, 0.1)");
+
+    gradient.addColorStop(0.0, "rgba(146, 51, 234, 0.45)");
+    gradient.addColorStop(0.2, "rgba(146, 51, 234, 0.35)");
+    gradient.addColorStop(0.4, "rgba(146, 51, 234, 0.22)");
+    gradient.addColorStop(0.6, "rgba(110, 40, 175, 0.12)");
+    gradient.addColorStop(0.8, "rgba(85, 37, 129, 0.06)");
+    gradient.addColorStop(0.9, "rgba(54, 30, 76, 0.03)");
+    gradient.addColorStop(1.0, "rgba(23, 23, 23, 0.01)");
+
+    // gradient.addColorStop(0.10, "rgba(146, 51, 234, 0.437)");
+    // gradient.addColorStop(0.30, "rgba(146, 51, 234, 0.326)");
+    // gradient.addColorStop(0.50, "rgba(146, 51, 234, 0.193)");
+    // gradient.addColorStop(0.60, "rgba(146, 51, 234, 0.070)");
+    // gradient.addColorStop(0.70, "rgba(146, 51, 234, 0.040)");
+    // gradient.addColorStop(0.80, "rgba(085, 37, 129, 0.030)");
+    // gradient.addColorStop(0.90, "rgba(085, 37, 129, 0.020)");
+    // gradient.addColorStop(0.93, "rgba(085, 37, 129, 0.010)");
+    // gradient.addColorStop(0.97, "rgba(054, 30, 076, 0.005)");
+    // gradient.addColorStop(1.00, "rgba(023, 23, 023, 0.002)");
 
     // Draw filled area with smooth curves
     ctx.beginPath();
@@ -296,12 +337,18 @@ export default function Chart({
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    // Draw data points with subtle animation scaling
+    // Draw data points with different sizes for monthly vs weekly view
     dataPoints.forEach((point, index) => {
       ctx.beginPath();
 
-      // Add subtle pulse effect during animation
-      const baseRadius = selectedPoint === index ? 8 : 6;
+      const baseRadius =
+        viewMode === "monthly"
+          ? selectedPoint === index
+            ? 6
+            : 3
+          : selectedPoint === index
+          ? 8
+          : 6;
       const pulseRadius = isAnimating
         ? baseRadius + Math.sin(performance.now() * 0.005) * 0.5
         : baseRadius;
@@ -321,23 +368,42 @@ export default function Chart({
       }
     });
 
-    // Draw day labels
     ctx.fillStyle = "#f3f3f3";
     ctx.font =
       "12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
     ctx.textAlign = "center";
-    dataPoints.forEach((point, index) => {
-      const opacity = selectedPoint === index ? 1 : 0.7;
-      ctx.globalAlpha = opacity;
-      ctx.fillText(animatedData[index].day, point.x, height - 10);
-    });
+
+    if (viewMode === "monthly") {
+      // For monthly view, only show the selected day's date
+      if (selectedPoint !== null && animatedData[selectedPoint]) {
+        const selectedData = animatedData[selectedPoint];
+        const selectedPointData = dataPoints[selectedPoint];
+        ctx.globalAlpha = 1;
+        ctx.fillText(
+          selectedData.date
+            ? new Date(selectedData.date).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })
+            : selectedData.day,
+          selectedPointData.x,
+          height - 10
+        );
+      }
+    } else {
+      // For weekly view, show all day labels
+      dataPoints.forEach((point, index) => {
+        const opacity = selectedPoint === index ? 1 : 0.7;
+        ctx.globalAlpha = opacity;
+        ctx.fillText(animatedData[index].day, point.x, height - 10);
+      });
+    }
     ctx.globalAlpha = 1;
   };
 
-  // Draw chart when animated data changes
   useEffect(() => {
     drawChart();
-  }, [animatedData, selectedPoint, isAnimating]);
+  }, [animatedData, selectedPoint, isAnimating, viewMode]);
 
   useEffect(() => {
     if (selectedDay !== null && selectedDay !== undefined) {

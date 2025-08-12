@@ -5,11 +5,13 @@ import ProfileIcon from "@/components/ProfileIcon/ProfileIcon";
 import WelcomeBack from "@/components/WelcomeBack/WelcomeBack";
 import Chart from "@/components/Chart/Chart";
 import Calendar from "@/components/Calendar/Calendar";
+import { getAugust2025Data } from "@/lib/mockData";
 
 interface ChartDataPoint {
   day: string;
   value: number;
   fullDay: string;
+  date?: string;
 }
 
 interface WeekData {
@@ -34,6 +36,10 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<"yearly" | "monthly" | "weekly">(
+    "weekly"
+  );
+  const [monthlyData, setMonthlyData] = useState<any>(null);
 
   useEffect(() => {
     if (allWeeksData.length > 0) {
@@ -83,8 +89,50 @@ export default function Dashboard() {
     fetchAllWeeksData();
   }, []);
 
+  useEffect(() => {
+    if (viewMode === "monthly") {
+      const august2025Data = getAugust2025Data();
+      const monthlyIncomeData = august2025Data.map((day, index) => ({
+        day: day.dayOfMonth.toString(),
+        value: day.income,
+        fullDay: day.fullDayName,
+        date: day.date,
+      }));
+      const monthlyExpenseData = august2025Data.map((day, index) => ({
+        day: day.dayOfMonth.toString(),
+        value: day.expense,
+        fullDay: day.fullDayName,
+        date: day.date,
+      }));
+
+      setMonthlyData({
+        income: { data: monthlyIncomeData },
+        expense: { data: monthlyExpenseData },
+      });
+    }
+  }, [viewMode]);
+
   const handleDataTypeChange = (type: "income" | "expense") => {
     setActiveDataType(type);
+  };
+
+  const handleViewModeChange = (mode: "yearly" | "monthly" | "weekly") => {
+    setViewMode(mode);
+    if (mode === "monthly") {
+      // For monthly view, set to current date if available
+      const today = new Date();
+      const august2025Data = getAugust2025Data();
+      const todayStr = today.toISOString().split("T")[0];
+      const dayIndex = august2025Data.findIndex(
+        (dayData) => dayData.date === todayStr
+      );
+      setSelectedDay(dayIndex !== -1 ? dayIndex : 15); // Default to middle of month
+    } else {
+      // For weekly view, keep current selection or default
+      if (selectedDay === null) {
+        setSelectedDay(3); // Default to Wednesday
+      }
+    }
   };
 
   const handleWeekChange = (weekNumber: number) => {
@@ -95,22 +143,63 @@ export default function Dashboard() {
     setSelectedDay(dayIndex);
   };
 
-  const currentWeekInfo = useMemo(() => {
-    const currentWeekData = allWeeksData.find(
-      (week) => week.week === selectedWeek
-    );
-    return currentWeekData
-      ? {
-          week: currentWeekData.week,
-          startDate: currentWeekData.startDate,
-          endDate: currentWeekData.endDate,
-          incomeTotal: currentWeekData.income.total,
-          expenseTotal: currentWeekData.expense.total,
-        }
-      : null;
-  }, [allWeeksData, selectedWeek]);
+  // Calculate totals based on current view mode
+  const currentTotals = useMemo(() => {
+    if (viewMode === "monthly") {
+      const august2025Data = getAugust2025Data();
+      const incomeTotal = august2025Data.reduce(
+        (sum, day) => sum + day.income,
+        0
+      );
+      const expenseTotal = august2025Data.reduce(
+        (sum, day) => sum + day.expense,
+        0
+      );
+      return { incomeTotal, expenseTotal };
+    } else {
+      // Weekly view
+      const currentWeekData = allWeeksData.find(
+        (week) => week.week === selectedWeek
+      );
+      return currentWeekData
+        ? {
+            incomeTotal: currentWeekData.income.total,
+            expenseTotal: currentWeekData.expense.total,
+          }
+        : { incomeTotal: 0, expenseTotal: 0 };
+    }
+  }, [allWeeksData, selectedWeek, viewMode]);
 
-  if (loading || !currentWeekInfo) {
+  // Update info display based on view mode
+  const currentViewInfo = useMemo(() => {
+    if (viewMode === "monthly") {
+      return {
+        title: "August 2025",
+        subtitle: "Monthly View • 31 Days",
+      };
+    } else {
+      const currentWeekData = allWeeksData.find(
+        (week) => week.week === selectedWeek
+      );
+      return currentWeekData
+        ? {
+            title: `Week ${currentWeekData.week}`,
+            subtitle: `${new Date(
+              currentWeekData.startDate
+            ).toLocaleDateString()} - ${new Date(
+              currentWeekData.endDate
+            ).toLocaleDateString()}`,
+          }
+        : { title: "Loading...", subtitle: "" };
+    }
+  }, [allWeeksData, selectedWeek, viewMode]);
+
+  if (
+    loading ||
+    (!currentTotals.incomeTotal &&
+      !currentTotals.expenseTotal &&
+      allWeeksData.length === 0)
+  ) {
     return (
       <div className={styles.container}>
         <div className={styles.mobileWrapper}>
@@ -139,14 +228,14 @@ export default function Dashboard() {
         <WelcomeBack
           onDataTypeChange={handleDataTypeChange}
           activeDataType={activeDataType}
-          incomeTotal={currentWeekInfo.incomeTotal}
-          expenseTotal={currentWeekInfo.expenseTotal}
+          incomeTotal={currentTotals.incomeTotal}
+          expenseTotal={currentTotals.expenseTotal}
+          viewMode={viewMode}
+          onViewModeChange={handleViewModeChange}
         />
         <div className={styles.weekInfo}>
           <span>
-            Week {currentWeekInfo.week} •{" "}
-            {new Date(currentWeekInfo.startDate).toLocaleDateString()} -{" "}
-            {new Date(currentWeekInfo.endDate).toLocaleDateString()}
+            {currentViewInfo.title} • {currentViewInfo.subtitle}
           </span>
         </div>
         <Chart
@@ -155,11 +244,14 @@ export default function Dashboard() {
           allWeeksData={allWeeksData}
           selectedDay={selectedDay}
           onDayChange={handleDayChange}
+          viewMode={viewMode}
+          monthlyData={monthlyData}
         />
         <Calendar
           onWeekChange={handleWeekChange}
           onDayChange={handleDayChange}
           selectedDay={selectedDay}
+          viewMode={viewMode}
         />
       </div>
     </div>

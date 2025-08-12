@@ -1,7 +1,6 @@
 .container {
   min-height: 100vh;
   min-height: 100dvh;
-  background-color: #343434;
   width: 100vw;
   padding: 0;
   margin: 0;
@@ -12,7 +11,6 @@
   width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
-  background-color: #343434;
   position: relative;
   padding: min(5vw, 20px);
   box-sizing: border-box;

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { getWeekFromDate } from "@/lib/mockData";
+import { getWeekFromDate } from "@/lib/mockData"; // Updated import to use getAugust2025Data
 import styles from "./Calendar.module.css";
 
 interface CalendarEvent {
@@ -12,16 +12,18 @@ interface CalendarProps {
   onWeekChange?: (weekNumber: number) => void;
   onDayChange?: (dayIndex: number) => void;
   selectedDay?: number | null;
+  viewMode?: "yearly" | "monthly" | "weekly";
 }
 
 export default function Calendar({
   onWeekChange,
   onDayChange,
   selectedDay,
+  viewMode = "weekly",
 }: CalendarProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [currentViewDate, setCurrentViewDate] = useState(new Date()); // Use actual current date
+  const [currentViewDate, setCurrentViewDate] = useState(new Date());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [events] = useState<CalendarEvent[]>([
     { date: "2025-08-05", title: "Meeting" },
@@ -85,14 +87,26 @@ export default function Calendar({
     const clickedDate = new Date(year, month, day);
     setSelectedDate(clickedDate);
 
-    const weekNumber = getWeekFromDate(clickedDate);
-    if (onWeekChange) {
-      onWeekChange(weekNumber);
-    }
+    if (viewMode === "weekly") {
+      const weekNumber = getWeekFromDate(clickedDate);
+      if (onWeekChange) {
+        onWeekChange(weekNumber);
+      }
 
-    if (onDayChange) {
-      const dayOfWeek = clickedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-      onDayChange(dayOfWeek);
+      if (onDayChange) {
+        const dayOfWeek = clickedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        onDayChange(dayOfWeek);
+      }
+    } else if (viewMode === "monthly") {
+      // For monthly view, we need to map the calendar day to the correct chart index
+      if (month === 7 && year === 2025) {
+        // August 2025
+        // For August days (1-31), the chart index should be day - 1
+        const chartIndex = day - 1; // Convert 1-based day to 0-based index
+        if (chartIndex >= 0 && chartIndex < 31 && onDayChange) {
+          onDayChange(chartIndex);
+        }
+      }
     }
   };
 
@@ -227,8 +241,8 @@ export default function Calendar({
 
   const renderExpandedCalendar = () => {
     const months = [];
-    const baseMonth = actualToday.getMonth(); // Use actual current month
-    const baseYear = actualToday.getFullYear(); // Use actual current year
+    const baseMonth = actualToday.getMonth();
+    const baseYear = actualToday.getFullYear();
     const startMonth = baseMonth - 6;
     const endMonth = baseMonth + 12;
 
