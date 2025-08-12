@@ -19,6 +19,25 @@
   max-width: 100vw;
 }
 
+/* Added proper loading container styling */
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  color: #f3f3f3;
+  font-size: 16px;
+}
+
+.weekInfo {
+  text-align: center;
+  color: #f3f3f3;
+  font-size: 14px;
+  opacity: 0.8;
+  margin: 10px 0;
+  font-weight: 500;
+}
+
 @media (min-width: 768px) {
   .container {
     display: flex;

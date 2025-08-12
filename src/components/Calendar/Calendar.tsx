@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import { getWeekFromDate } from "@/lib/mockData";
 import styles from "./Calendar.module.css";
 
 interface CalendarEvent {
@@ -7,17 +8,21 @@ interface CalendarEvent {
   title: string;
 }
 
-export default function Calendar() {
+interface CalendarProps {
+  onWeekChange?: (weekNumber: number) => void;
+}
+
+export default function Calendar({ onWeekChange }: CalendarProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [currentViewDate, setCurrentViewDate] = useState(new Date());
+  const [currentViewDate, setCurrentViewDate] = useState(new Date(2025, 7, 1)); // August 2025
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [events] = useState<CalendarEvent[]>([
-    { date: "2024-01-22", title: "Meeting" },
-    { date: "2024-01-15", title: "Event" },
+    { date: "2025-08-05", title: "Meeting" },
+    { date: "2025-08-15", title: "Event" },
   ]);
 
-  const currentDate = new Date();
+  const currentDate = new Date(2025, 7, 1); // August 1, 2025
   const currentDay = currentDate.getDate();
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
@@ -66,7 +71,13 @@ export default function Calendar() {
   };
 
   const handleDateClick = (day: number, month: number, year: number) => {
-    setSelectedDate(new Date(year, month, day));
+    const clickedDate = new Date(year, month, day);
+    setSelectedDate(clickedDate);
+
+    const weekNumber = getWeekFromDate(clickedDate);
+    if (onWeekChange) {
+      onWeekChange(weekNumber);
+    }
   };
 
   const handleMonthNavigation = (direction: "prev" | "next") => {
@@ -200,13 +211,15 @@ export default function Calendar() {
 
   const renderExpandedCalendar = () => {
     const months = [];
-    const startMonth = currentMonth - 6;
-    const endMonth = currentMonth + 12;
+    const baseMonth = 7; // August (0-indexed)
+    const baseYear = 2025;
+    const startMonth = baseMonth - 6;
+    const endMonth = baseMonth + 12;
 
     for (let i = startMonth; i <= endMonth; i++) {
       const month = ((i % 12) + 12) % 12;
-      const year = currentYear + Math.floor(i / 12);
-      months.push(renderMonth(month, year, i === currentMonth));
+      const year = baseYear + Math.floor(i / 12);
+      months.push(renderMonth(month, year, i === baseMonth));
     }
 
     return months;

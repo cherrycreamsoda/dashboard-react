@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import styles from "./page.module.css";
 import ProfileIcon from "@/components/ProfileIcon/ProfileIcon";
 import WelcomeBack from "@/components/WelcomeBack/WelcomeBack";
@@ -12,7 +12,10 @@ interface ChartDataPoint {
   fullDay: string;
 }
 
-interface ApiResponse {
+interface WeekData {
+  week: number;
+  startDate: string;
+  endDate: string;
   income: {
     data: ChartDataPoint[];
     total: number;
@@ -27,30 +30,53 @@ export default function Dashboard() {
   const [activeDataType, setActiveDataType] = useState<"income" | "expense">(
     "income"
   );
-  const [chartData, setChartData] = useState<ApiResponse | null>(null);
+  const [allWeeksData, setAllWeeksData] = useState<WeekData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedWeek, setSelectedWeek] = useState(1);
+
+  const fetchAllWeeksData = async () => {
+    setLoading(true);
+    try {
+      const promises = Array.from({ length: 6 }, (_, i) =>
+        fetch(`/api/chart-data?week=${i + 1}`).then((res) => res.json())
+      );
+      const allData = await Promise.all(promises);
+      setAllWeeksData(allData);
+    } catch (error) {
+      console.error("Failed to fetch chart data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch("/api/chart-data");
-        const data = await response.json();
-        setChartData(data);
-      } catch (error) {
-        console.error("Failed to fetch chart data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchAllWeeksData();
   }, []);
 
   const handleDataTypeChange = (type: "income" | "expense") => {
     setActiveDataType(type);
   };
 
-  if (loading || !chartData) {
+  const handleWeekChange = (weekNumber: number) => {
+    setSelectedWeek(weekNumber);
+  };
+
+  const currentWeekInfo = useMemo(() => {
+    const currentWeekData = allWeeksData.find(
+      (week) => week.week === selectedWeek
+    );
+    return currentWeekData
+      ? {
+          week: currentWeekData.week,
+          startDate: currentWeekData.startDate,
+          endDate: currentWeekData.endDate,
+          incomeTotal: currentWeekData.income.total,
+          expenseTotal: currentWeekData.expense.total,
+        }
+      : null;
+  }, [allWeeksData, selectedWeek]);
+
+  if (loading || !currentWeekInfo) {
     return (
       <div className={styles.container}>
         <div className={styles.mobileWrapper}>
@@ -79,15 +105,22 @@ export default function Dashboard() {
         <WelcomeBack
           onDataTypeChange={handleDataTypeChange}
           activeDataType={activeDataType}
-          incomeTotal={chartData.income.total}
-          expenseTotal={chartData.expense.total}
+          incomeTotal={currentWeekInfo.incomeTotal}
+          expenseTotal={currentWeekInfo.expenseTotal}
         />
+        <div className={styles.weekInfo}>
+          <span>
+            Week {currentWeekInfo.week} •{" "}
+            {new Date(currentWeekInfo.startDate).toLocaleDateString()} -{" "}
+            {new Date(currentWeekInfo.endDate).toLocaleDateString()}
+          </span>
+        </div>
         <Chart
           dataType={activeDataType}
-          incomeData={chartData.income.data}
-          expenseData={chartData.expense.data}
+          selectedWeek={selectedWeek}
+          allWeeksData={allWeeksData}
         />
-        <Calendar />
+        <Calendar onWeekChange={handleWeekChange} />
       </div>
     </div>
   );
