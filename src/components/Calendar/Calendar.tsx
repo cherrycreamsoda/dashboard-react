@@ -10,22 +10,33 @@ interface CalendarEvent {
 
 interface CalendarProps {
   onWeekChange?: (weekNumber: number) => void;
+  onDayChange?: (dayIndex: number) => void;
+  selectedDay?: number | null;
 }
 
-export default function Calendar({ onWeekChange }: CalendarProps) {
+export default function Calendar({
+  onWeekChange,
+  onDayChange,
+  selectedDay,
+}: CalendarProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [currentViewDate, setCurrentViewDate] = useState(new Date(2025, 7, 1)); // August 2025
+  const [currentViewDate, setCurrentViewDate] = useState(new Date()); // Use actual current date
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [events] = useState<CalendarEvent[]>([
     { date: "2025-08-05", title: "Meeting" },
     { date: "2025-08-15", title: "Event" },
   ]);
 
-  const currentDate = new Date(2025, 7, 1); // August 1, 2025
-  const currentDay = currentDate.getDate();
-  const currentMonth = currentDate.getMonth();
-  const currentYear = currentDate.getFullYear();
+  useEffect(() => {
+    const today = new Date();
+    setSelectedDate(today);
+  }, []);
+
+  const actualToday = new Date();
+  const todayDay = actualToday.getDate();
+  const todayMonth = actualToday.getMonth();
+  const todayYear = actualToday.getFullYear();
 
   const monthNames = [
     "January",
@@ -58,7 +69,7 @@ export default function Calendar({ onWeekChange }: CalendarProps) {
   };
 
   const isToday = (day: number, month: number, year: number) => {
-    return day === currentDay && month === currentMonth && year === currentYear;
+    return day === todayDay && month === todayMonth && year === todayYear;
   };
 
   const isSelected = (day: number, month: number, year: number) => {
@@ -77,6 +88,11 @@ export default function Calendar({ onWeekChange }: CalendarProps) {
     const weekNumber = getWeekFromDate(clickedDate);
     if (onWeekChange) {
       onWeekChange(weekNumber);
+    }
+
+    if (onDayChange) {
+      const dayOfWeek = clickedDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      onDayChange(dayOfWeek);
     }
   };
 
@@ -211,8 +227,8 @@ export default function Calendar({ onWeekChange }: CalendarProps) {
 
   const renderExpandedCalendar = () => {
     const months = [];
-    const baseMonth = 7; // August (0-indexed)
-    const baseYear = 2025;
+    const baseMonth = actualToday.getMonth(); // Use actual current month
+    const baseYear = actualToday.getFullYear(); // Use actual current year
     const startMonth = baseMonth - 6;
     const endMonth = baseMonth + 12;
 

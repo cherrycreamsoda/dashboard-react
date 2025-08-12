@@ -33,6 +33,36 @@ export default function Dashboard() {
   const [allWeeksData, setAllWeeksData] = useState<WeekData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedWeek, setSelectedWeek] = useState(1);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (allWeeksData.length > 0) {
+      const today = new Date();
+      const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
+
+      // Find which week contains today's date
+      for (const weekData of allWeeksData) {
+        const startDate = new Date(weekData.startDate);
+        const endDate = new Date(weekData.endDate);
+
+        if (today >= startDate && today <= endDate) {
+          // Found the week containing today
+          setSelectedWeek(weekData.week);
+
+          // Calculate which day index within this week
+          const daysDiff = Math.floor(
+            (today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+          );
+          setSelectedDay(daysDiff);
+          return;
+        }
+      }
+
+      // If today is not in any of the August 2025 weeks, default to middle of first week
+      setSelectedWeek(1);
+      setSelectedDay(3); // Wednesday
+    }
+  }, [allWeeksData]);
 
   const fetchAllWeeksData = async () => {
     setLoading(true);
@@ -59,6 +89,10 @@ export default function Dashboard() {
 
   const handleWeekChange = (weekNumber: number) => {
     setSelectedWeek(weekNumber);
+  };
+
+  const handleDayChange = (dayIndex: number) => {
+    setSelectedDay(dayIndex);
   };
 
   const currentWeekInfo = useMemo(() => {
@@ -119,8 +153,14 @@ export default function Dashboard() {
           dataType={activeDataType}
           selectedWeek={selectedWeek}
           allWeeksData={allWeeksData}
+          selectedDay={selectedDay}
+          onDayChange={handleDayChange}
         />
-        <Calendar onWeekChange={handleWeekChange} />
+        <Calendar
+          onWeekChange={handleWeekChange}
+          onDayChange={handleDayChange}
+          selectedDay={selectedDay}
+        />
       </div>
     </div>
   );
