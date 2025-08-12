@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import styles from "./Chart.module.css";
 import { getAugust2025Data } from "@/lib/mockData";
 
@@ -53,8 +53,8 @@ export default function Chart({
   monthlyData, // Added monthlyData prop
 }: ChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>();
-  const startTimeRef = useRef<number>();
+  const animationRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
   const [selectedPoint, setSelectedPoint] = useState<number | null>(
     selectedDay ?? 4
   );
@@ -192,7 +192,7 @@ export default function Chart({
     };
   }, [currentData, animatedData.length, viewMode]);
 
-  const drawChart = () => {
+  const drawChart = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || animatedData.length === 0) return;
 
@@ -204,6 +204,7 @@ export default function Chart({
 
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform before scaling
     ctx.scale(dpr, dpr);
 
     const width = rect.width;
@@ -361,7 +362,6 @@ export default function Chart({
         ctx.strokeStyle = "#000000";
         ctx.lineWidth = 2;
         ctx.stroke();
-        setTooltipPosition({ x: point.x, y: point.y });
       } else {
         ctx.fillStyle = "#9333ea";
         ctx.fill();
@@ -399,7 +399,14 @@ export default function Chart({
       });
     }
     ctx.globalAlpha = 1;
-  };
+  }, [
+    animatedData,
+    selectedPoint,
+    isAnimating,
+    viewMode,
+    minValue,
+    valueRange,
+  ]);
 
   useEffect(() => {
     drawChart();
@@ -462,6 +469,32 @@ export default function Chart({
     canvas.addEventListener("click", handleClick);
     return () => canvas.removeEventListener("click", handleClick);
   }, [animatedData, allIncomeData, allExpenseData, onDayChange]);
+
+  useEffect(() => {
+    if (selectedPoint !== null && animatedData[selectedPoint]) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+      const paddingTop = 40;
+      const paddingBottom = 60;
+      const paddingLeft = 20;
+      const paddingRight = 20;
+      const chartWidth = width - paddingLeft - paddingRight;
+      const chartHeight = height - paddingTop - paddingBottom;
+
+      const x =
+        paddingLeft + (selectedPoint * chartWidth) / (animatedData.length - 1);
+      const y =
+        paddingTop +
+        chartHeight -
+        ((animatedData[selectedPoint].currentValue - minValue) / valueRange) *
+          chartHeight;
+
+      setTooltipPosition({ x, y });
+    }
+  }, [selectedPoint, animatedData, minValue, valueRange]);
 
   return (
     <div className={styles.chartContainer}>
