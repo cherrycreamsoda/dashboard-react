@@ -44,3 +44,11 @@
   cursor: pointer;
   max-width: 100%;
 }
+.weekInfo {
+  text-align: center;
+  color: #f3f3f3;
+  font-size: 14px;
+  opacity: 0.8;
+  margin: 10px 0;
+  font-weight: 500;
+}

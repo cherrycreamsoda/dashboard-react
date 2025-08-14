@@ -20,6 +20,10 @@ interface ChartProps {
   viewMode: "yearly" | "monthly" | "weekly";
   monthlyData?: any; // Added monthlyData prop
   onViewModeChange: (mode: "yearly" | "monthly" | "weekly") => void;
+  currentViewInfo?: {
+    title: string;
+    subtitle: string;
+  };
 }
 
 interface WeekData {
@@ -54,6 +58,7 @@ export default function Chart({
   viewMode,
   onViewModeChange,
   monthlyData,
+  currentViewInfo,
 }: ChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
@@ -517,6 +522,11 @@ export default function Chart({
         </div>
       )}
       <canvas ref={canvasRef} className={styles.canvas} />
+      <div className={styles.weekInfo}>
+        <span>
+          {currentViewInfo.title} • {currentViewInfo.subtitle}
+        </span>
+      </div>
     </div>
   );
 }

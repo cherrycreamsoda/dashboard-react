@@ -233,11 +233,6 @@ export default function Dashboard() {
           expenseTotal={currentTotals.expenseTotal}
         />
 
-        <div className={styles.weekInfo}>
-          <span>
-            {currentViewInfo.title} • {currentViewInfo.subtitle}
-          </span>
-        </div>
         <Chart
           dataType={activeDataType}
           selectedWeek={selectedWeek}
@@ -247,6 +242,7 @@ export default function Dashboard() {
           viewMode={viewMode}
           monthlyData={monthlyData}
           onViewModeChange={handleViewModeChange}
+          currentViewInfo={currentViewInfo}
         />
         <Calendar
           onWeekChange={handleWeekChange}
