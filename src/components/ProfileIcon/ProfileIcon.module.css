@@ -48,10 +48,6 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: linear-gradient(
-    135deg,
-    var(--aquamarine) 0%,
-    var(--spring-green) 50%,
-    var(--chartreuse) 100%
-  );
+  /* Updated gradient colors from #618D8F to #8F617A */
+  background: linear-gradient(135deg, #a2faff 0%, #ffa2d4 100%);
 }

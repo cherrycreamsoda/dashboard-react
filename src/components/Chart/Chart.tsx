@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 import styles from "./Chart.module.css";
-import { getAugust2025Data } from "@/lib/mockData";
+import { getCurrentMonthDaysOnly } from "@/lib/mockData";
 import TimeframeButtons from "./TimeframeButtons";
 
 interface ChartDataPoint {
@@ -18,7 +18,7 @@ interface ChartProps {
   selectedDay?: number | null;
   onDayChange?: (dayIndex: number) => void;
   viewMode: "yearly" | "monthly" | "weekly";
-  monthlyData?: any; // Added monthlyData prop
+  monthlyData?: any;
   onViewModeChange: (mode: "yearly" | "monthly" | "weekly") => void;
   currentViewInfo?: {
     title: string;
@@ -49,7 +49,7 @@ interface AnimatedDataPoint {
   date?: string;
 }
 
-export default function Chart({
+const Chart = memo(function Chart({
   dataType,
   selectedWeek,
   allWeeksData,
@@ -70,25 +70,44 @@ export default function Chart({
   const [animatedData, setAnimatedData] = useState<AnimatedDataPoint[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const previousDataRef = useRef<ChartDataPoint[]>([]);
-  const [minValue, setMinValue] = useState<number>(0);
-  const [valueRange, setValueRange] = useState<number>(1);
 
-  const getCurrentData = () => {
+  const allIncomeData = useMemo(() => {
+    return allWeeksData.flatMap((week) => week.income.data);
+  }, [allWeeksData]);
+
+  const allExpenseData = useMemo(() => {
+    return allWeeksData.flatMap((week) => week.expense.data);
+  }, [allWeeksData]);
+
+  const { minValue, valueRange } = useMemo(() => {
+    const allValues = [...allIncomeData, ...allExpenseData].map((d) => d.value);
+    const maxValue = Math.max(...allValues);
+    const minValue = Math.min(...allValues);
+    const valueRange = maxValue - minValue || 1;
+    return { minValue, valueRange };
+  }, [allIncomeData, allExpenseData]);
+
+  const getCurrentData = useMemo(() => {
     if (viewMode === "monthly") {
       if (monthlyData) {
         return dataType === "income"
           ? monthlyData.income.data
           : monthlyData.expense.data;
       }
-      const august2025Data = getAugust2025Data();
-      return august2025Data.map((day, index) => ({
+      const currentMonthData = getCurrentMonthDaysOnly();
+      return currentMonthData.map((day, index) => ({
         day: day.dayOfMonth.toString(),
         value: dataType === "income" ? day.income : day.expense,
-        fullDay: `${day.fullDayName}, Aug ${day.dayOfMonth}`,
+        fullDay: `${day.fullDayName}, ${new Date(day.date).toLocaleDateString(
+          "en-US",
+          {
+            month: "short",
+            day: "numeric",
+          }
+        )}`,
         date: day.date,
       }));
     } else {
-      // Weekly view
       const currentWeekData = allWeeksData.find(
         (week) => week.week === selectedWeek
       );
@@ -98,24 +117,19 @@ export default function Chart({
           : currentWeekData.expense.data
         : [];
     }
-  };
-
-  const currentData = getCurrentData();
-
-  const allIncomeData = allWeeksData.flatMap((week) => week.income.data);
-  const allExpenseData = allWeeksData.flatMap((week) => week.expense.data);
+  }, [viewMode, monthlyData, dataType, allWeeksData, selectedWeek]);
 
   const ANIMATION_DURATION = 1200;
 
-  const easeInOutCubic = (t: number): number => {
+  const easeInOutCubic = useCallback((t: number): number => {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-  };
+  }, []);
 
   useEffect(() => {
-    if (currentData.length === 0) return;
+    if (getCurrentData.length === 0) return;
 
     if (animatedData.length === 0) {
-      const initialData = currentData.map((item) => ({
+      const initialData = getCurrentData.map((item) => ({
         day: item.day,
         startValue: item.value,
         currentValue: item.value,
@@ -124,15 +138,16 @@ export default function Chart({
         date: item.date,
       }));
       setAnimatedData(initialData);
-      previousDataRef.current = [...currentData];
+      previousDataRef.current = [...getCurrentData];
       return;
     }
 
     const hasDataChanged =
-      JSON.stringify(previousDataRef.current) !== JSON.stringify(currentData);
+      JSON.stringify(previousDataRef.current) !==
+      JSON.stringify(getCurrentData);
 
     if (hasDataChanged) {
-      const newAnimatedData = currentData.map((item, index) => {
+      const newAnimatedData = getCurrentData.map((item, index) => {
         const currentAnimatedValue =
           animatedData[index]?.currentValue ?? item.value;
         return {
@@ -148,7 +163,7 @@ export default function Chart({
       setAnimatedData(newAnimatedData);
       setIsAnimating(true);
       startTimeRef.current = performance.now();
-      previousDataRef.current = [...currentData];
+      previousDataRef.current = [...getCurrentData];
 
       const animateValues = (currentTime: number) => {
         if (!startTimeRef.current) {
@@ -198,7 +213,7 @@ export default function Chart({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [currentData, animatedData.length, viewMode]);
+  }, [getCurrentData, animatedData.length, viewMode, easeInOutCubic]);
 
   const drawChart = useCallback(() => {
     const canvas = canvasRef.current;
@@ -212,7 +227,7 @@ export default function Chart({
 
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform before scaling
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
 
     const width = rect.width;
@@ -225,14 +240,6 @@ export default function Chart({
     const chartHeight = height - paddingTop - paddingBottom;
 
     ctx.clearRect(0, 0, width, height);
-
-    const allValues = [...allIncomeData, ...allExpenseData].map((d) => d.value);
-    const maxValue = Math.max(...allValues);
-    const minValue = Math.min(...allValues);
-    const valueRange = maxValue - minValue || 1;
-
-    setMinValue(minValue);
-    setValueRange(valueRange);
 
     const dataPoints = animatedData.map((data, index) => ({
       x: paddingLeft + (index * chartWidth) / (animatedData.length - 1),
@@ -256,7 +263,6 @@ export default function Chart({
       ctx.stroke();
     });
 
-    // Create gradient
     const gradient = ctx.createLinearGradient(
       0,
       paddingTop,
@@ -264,24 +270,25 @@ export default function Chart({
       height - paddingBottom
     );
 
-    gradient.addColorStop(0.0, "rgba(146, 51, 234, 0.45)");
-    gradient.addColorStop(0.2, "rgba(146, 51, 234, 0.35)");
-    gradient.addColorStop(0.4, "rgba(146, 51, 234, 0.22)");
-    gradient.addColorStop(0.6, "rgba(110, 40, 175, 0.12)");
-    gradient.addColorStop(0.8, "rgba(85, 37, 129, 0.06)");
-    gradient.addColorStop(0.9, "rgba(54, 30, 76, 0.03)");
-    gradient.addColorStop(1.0, "rgba(23, 23, 23, 0.01)");
-
-    // gradient.addColorStop(0.10, "rgba(146, 51, 234, 0.437)");
-    // gradient.addColorStop(0.30, "rgba(146, 51, 234, 0.326)");
-    // gradient.addColorStop(0.50, "rgba(146, 51, 234, 0.193)");
-    // gradient.addColorStop(0.60, "rgba(146, 51, 234, 0.070)");
-    // gradient.addColorStop(0.70, "rgba(146, 51, 234, 0.040)");
-    // gradient.addColorStop(0.80, "rgba(085, 37, 129, 0.030)");
-    // gradient.addColorStop(0.90, "rgba(085, 37, 129, 0.020)");
-    // gradient.addColorStop(0.93, "rgba(085, 37, 129, 0.010)");
-    // gradient.addColorStop(0.97, "rgba(054, 30, 076, 0.005)");
-    // gradient.addColorStop(1.00, "rgba(023, 23, 023, 0.002)");
+    if (dataType === "income") {
+      // Income chart uses Celeste (#a2faff) for shaded area
+      gradient.addColorStop(0.0, "rgba(162, 250, 255, 0.45)");
+      gradient.addColorStop(0.2, "rgba(162, 250, 255, 0.35)");
+      gradient.addColorStop(0.4, "rgba(162, 250, 255, 0.22)");
+      gradient.addColorStop(0.6, "rgba(162, 250, 255, 0.12)");
+      gradient.addColorStop(0.8, "rgba(162, 250, 255, 0.06)");
+      gradient.addColorStop(0.9, "rgba(162, 250, 255, 0.03)");
+      gradient.addColorStop(1.0, "rgba(23, 23, 23, 0.01)");
+    } else {
+      // Expense chart uses Carnation Pink (#ffa2d4) for shaded area
+      gradient.addColorStop(0.0, "rgba(255, 162, 212, 0.45)");
+      gradient.addColorStop(0.2, "rgba(255, 162, 212, 0.35)");
+      gradient.addColorStop(0.4, "rgba(255, 162, 212, 0.22)");
+      gradient.addColorStop(0.6, "rgba(255, 162, 212, 0.12)");
+      gradient.addColorStop(0.8, "rgba(255, 162, 212, 0.06)");
+      gradient.addColorStop(0.9, "rgba(255, 162, 212, 0.03)");
+      gradient.addColorStop(1.0, "rgba(23, 23, 23, 0.01)");
+    }
 
     // Draw filled area with smooth curves
     ctx.beginPath();
@@ -317,7 +324,6 @@ export default function Chart({
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // Draw line with smooth curves
     ctx.beginPath();
     ctx.moveTo(dataPoints[0].x, dataPoints[0].y);
 
@@ -342,11 +348,11 @@ export default function Chart({
       }
     }
 
-    ctx.strokeStyle = "#9333ea";
+    // Income uses Dark Cyan (#618d8f), Expense uses Chinese Violet (#8f617a)
+    ctx.strokeStyle = dataType === "income" ? "#618d8f" : "#8f617a";
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    // Draw data points with different sizes for monthly vs weekly view
     dataPoints.forEach((point, index) => {
       ctx.beginPath();
 
@@ -371,18 +377,19 @@ export default function Chart({
         ctx.lineWidth = 2;
         ctx.stroke();
       } else {
-        ctx.fillStyle = "#9333ea";
+        // Income uses Dark Cyan (#618d8f), Expense uses Chinese Violet (#8f617a)
+        ctx.fillStyle = dataType === "income" ? "#618d8f" : "#8f617a";
         ctx.fill();
       }
     });
 
+    // ... existing code for text rendering ...
     ctx.fillStyle = "#f3f3f3";
     ctx.font =
       "12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
     ctx.textAlign = "center";
 
     if (viewMode === "monthly") {
-      // For monthly view, only show the selected day's date
       if (selectedPoint !== null && animatedData[selectedPoint]) {
         const selectedData = animatedData[selectedPoint];
         const selectedPointData = dataPoints[selectedPoint];
@@ -399,7 +406,6 @@ export default function Chart({
         );
       }
     } else {
-      // For weekly view, show all day labels
       dataPoints.forEach((point, index) => {
         const opacity = selectedPoint === index ? 1 : 0.7;
         ctx.globalAlpha = opacity;
@@ -414,11 +420,12 @@ export default function Chart({
     viewMode,
     minValue,
     valueRange,
+    dataType,
   ]);
 
   useEffect(() => {
     drawChart();
-  }, [animatedData, selectedPoint, isAnimating, viewMode]);
+  }, [drawChart]);
 
   useEffect(() => {
     if (selectedDay !== null && selectedDay !== undefined) {
@@ -426,12 +433,11 @@ export default function Chart({
     }
   }, [selectedDay]);
 
-  // Handle canvas click
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  const handleCanvasClick = useCallback(
+    (event: MouseEvent) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-    const handleClick = (event: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
@@ -472,16 +478,22 @@ export default function Chart({
           onDayChange(closestIndex);
         }
       }
-    };
-
-    canvas.addEventListener("click", handleClick);
-    return () => canvas.removeEventListener("click", handleClick);
-  }, [animatedData, allIncomeData, allExpenseData, onDayChange]);
+    },
+    [animatedData, minValue, valueRange, onDayChange]
+  );
 
   useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    canvas.addEventListener("click", handleCanvasClick);
+    return () => canvas.removeEventListener("click", handleCanvasClick);
+  }, [handleCanvasClick]);
+
+  const tooltipPositionMemo = useMemo(() => {
     if (selectedPoint !== null && animatedData[selectedPoint]) {
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      if (!canvas) return { x: 0, y: 0 };
       const rect = canvas.getBoundingClientRect();
       const width = rect.width;
       const height = rect.height;
@@ -500,9 +512,14 @@ export default function Chart({
         ((animatedData[selectedPoint].currentValue - minValue) / valueRange) *
           chartHeight;
 
-      setTooltipPosition({ x, y });
+      return { x, y };
     }
+    return { x: 0, y: 0 };
   }, [selectedPoint, animatedData, minValue, valueRange]);
+
+  useEffect(() => {
+    setTooltipPosition(tooltipPositionMemo);
+  }, [tooltipPositionMemo]);
 
   return (
     <div className={styles.chartContainer}>
@@ -524,9 +541,11 @@ export default function Chart({
       <canvas ref={canvasRef} className={styles.canvas} />
       <div className={styles.weekInfo}>
         <span>
-          {currentViewInfo.title} • {currentViewInfo.subtitle}
+          {currentViewInfo?.title} • {currentViewInfo?.subtitle}
         </span>
       </div>
     </div>
   );
-}
+});
+
+export default Chart;

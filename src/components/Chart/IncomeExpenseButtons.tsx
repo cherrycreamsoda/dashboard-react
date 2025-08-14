@@ -1,3 +1,5 @@
+"use client";
+
 import styles from "./IncomeExpenseButtons.module.css";
 
 interface IncomeExpenseButtonsProps {
@@ -25,7 +27,7 @@ export default function IncomeExpenseButtons({
   return (
     <div className={styles.tagsContainer}>
       <button
-        className={`${styles.dataButton} ${
+        className={`${styles.dataButton} ${styles.incomeButton} ${
           activeDataType === "income" ? styles.active : styles.inactive
         }`}
         onClick={() => onDataTypeChange("income")}
@@ -35,7 +37,7 @@ export default function IncomeExpenseButtons({
         </span>
       </button>
       <button
-        className={`${styles.dataButton} ${
+        className={`${styles.dataButton} ${styles.expenseButton} ${
           activeDataType === "expense" ? styles.active : styles.inactive
         }`}
         onClick={() => onDataTypeChange("expense")}

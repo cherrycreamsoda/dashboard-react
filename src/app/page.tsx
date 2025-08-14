@@ -5,8 +5,7 @@ import ProfileIcon from "@/components/ProfileIcon/ProfileIcon";
 import WelcomeBack from "@/components/WelcomeBack/WelcomeBack";
 import Chart from "@/components/Chart/Chart";
 import Calendar from "@/components/Calendar/Calendar";
-import { getAugust2025Data } from "@/lib/mockData";
-import TimeframeButtons from "../components/Chart/TimeframeButtons";
+import { getCurrentMonthDaysOnly } from "@/lib/mockData";
 import IncomeExpenseButtons from "@/components/Chart/IncomeExpenseButtons";
 
 interface ChartDataPoint {
@@ -36,6 +35,8 @@ export default function Dashboard() {
   );
   const [allWeeksData, setAllWeeksData] = useState<WeekData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"yearly" | "monthly" | "weekly">(
@@ -48,16 +49,13 @@ export default function Dashboard() {
       const today = new Date();
       const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
 
-      // Find which week contains today's date
       for (const weekData of allWeeksData) {
         const startDate = new Date(weekData.startDate);
         const endDate = new Date(weekData.endDate);
 
         if (today >= startDate && today <= endDate) {
-          // Found the week containing today
           setSelectedWeek(weekData.week);
 
-          // Calculate which day index within this week
           const daysDiff = Math.floor(
             (today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
           );
@@ -66,7 +64,6 @@ export default function Dashboard() {
         }
       }
 
-      // If today is not in any of the August 2025 weeks, default to middle of first week
       setSelectedWeek(1);
       setSelectedDay(3); // Wednesday
     }
@@ -74,17 +71,97 @@ export default function Dashboard() {
 
   const fetchAllWeeksData = async () => {
     setLoading(true);
+    setError(null);
+
     try {
       const promises = Array.from({ length: 6 }, (_, i) =>
-        fetch(`/api/chart-data?week=${i + 1}`).then((res) => res.json())
+        fetch(`/api/chart-data?week=${i + 1}`).then(async (res) => {
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          }
+          const data = await res.json();
+          if (!data || typeof data !== "object") {
+            throw new Error("Invalid data format received");
+          }
+          return data;
+        })
       );
+
       const allData = await Promise.all(promises);
-      setAllWeeksData(allData);
+
+      const validData = allData.filter(
+        (weekData) =>
+          weekData &&
+          weekData.week &&
+          weekData.income &&
+          weekData.expense &&
+          Array.isArray(weekData.income.data) &&
+          Array.isArray(weekData.expense.data)
+      );
+
+      if (validData.length === 0) {
+        throw new Error("No valid data received from API");
+      }
+
+      setAllWeeksData(validData);
+      setRetryCount(0);
     } catch (error) {
       console.error("Failed to fetch chart data:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to load chart data. Please check your connection.";
+      setError(errorMessage);
+
+      if (retryCount < 2) {
+        console.log("API failed, using fallback mock data");
+        try {
+          const mockData = getCurrentMonthDaysOnly();
+          const fallbackWeeks: WeekData[] = [];
+          for (let week = 1; week <= 6; week++) {
+            const weekDays = mockData.filter(
+              (_, index) => Math.floor(index / 7) + 1 === week
+            );
+            if (weekDays.length > 0) {
+              fallbackWeeks.push({
+                week,
+                startDate: weekDays[0].date,
+                endDate: weekDays[weekDays.length - 1].date,
+                income: {
+                  data: weekDays.map((day) => ({
+                    day: day.dayOfWeek,
+                    value: day.income,
+                    fullDay: day.fullDayName,
+                    date: day.date,
+                  })),
+                  total: weekDays.reduce((sum, day) => sum + day.income, 0),
+                },
+                expense: {
+                  data: weekDays.map((day) => ({
+                    day: day.dayOfWeek,
+                    value: day.expense,
+                    fullDay: day.fullDayName,
+                    date: day.date,
+                  })),
+                  total: weekDays.reduce((sum, day) => sum + day.expense, 0),
+                },
+              });
+            }
+          }
+          setAllWeeksData(fallbackWeeks);
+          setError(null);
+        } catch (fallbackError) {
+          console.error("Fallback data generation failed:", fallbackError);
+        }
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRetry = () => {
+    setRetryCount((prev) => prev + 1);
+    fetchAllWeeksData();
   };
 
   useEffect(() => {
@@ -93,24 +170,29 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (viewMode === "monthly") {
-      const august2025Data = getAugust2025Data();
-      const monthlyIncomeData = august2025Data.map((day, index) => ({
-        day: day.dayOfMonth.toString(),
-        value: day.income,
-        fullDay: day.fullDayName,
-        date: day.date,
-      }));
-      const monthlyExpenseData = august2025Data.map((day, index) => ({
-        day: day.dayOfMonth.toString(),
-        value: day.expense,
-        fullDay: day.fullDayName,
-        date: day.date,
-      }));
+      try {
+        const currentMonthData = getCurrentMonthDaysOnly();
+        const monthlyIncomeData = currentMonthData.map((day, index) => ({
+          day: day.dayOfMonth.toString(),
+          value: day.income,
+          fullDay: day.fullDayName,
+          date: day.date,
+        }));
+        const monthlyExpenseData = currentMonthData.map((day, index) => ({
+          day: day.dayOfMonth.toString(),
+          value: day.expense,
+          fullDay: day.fullDayName,
+          date: day.date,
+        }));
 
-      setMonthlyData({
-        income: { data: monthlyIncomeData },
-        expense: { data: monthlyExpenseData },
-      });
+        setMonthlyData({
+          income: { data: monthlyIncomeData },
+          expense: { data: monthlyExpenseData },
+        });
+      } catch (error) {
+        console.error("Failed to generate monthly data:", error);
+        setError("Failed to load monthly view data");
+      }
     }
   }, [viewMode]);
 
@@ -121,18 +203,16 @@ export default function Dashboard() {
   const handleViewModeChange = (mode: "yearly" | "monthly" | "weekly") => {
     setViewMode(mode);
     if (mode === "monthly") {
-      // For monthly view, set to current date if available
       const today = new Date();
-      const august2025Data = getAugust2025Data();
+      const currentMonthData = getCurrentMonthDaysOnly();
       const todayStr = today.toISOString().split("T")[0];
-      const dayIndex = august2025Data.findIndex(
+      const dayIndex = currentMonthData.findIndex(
         (dayData) => dayData.date === todayStr
       );
-      setSelectedDay(dayIndex !== -1 ? dayIndex : 15); // Default to middle of month
+      setSelectedDay(dayIndex !== -1 ? dayIndex : 15);
     } else {
-      // For weekly view, keep current selection or default
       if (selectedDay === null) {
-        setSelectedDay(3); // Default to Wednesday
+        setSelectedDay(3);
       }
     }
   };
@@ -145,63 +225,70 @@ export default function Dashboard() {
     setSelectedDay(dayIndex);
   };
 
-  // Calculate totals based on current view mode
   const currentTotals = useMemo(() => {
-    if (viewMode === "monthly") {
-      const august2025Data = getAugust2025Data();
-      const incomeTotal = august2025Data.reduce(
-        (sum, day) => sum + day.income,
-        0
-      );
-      const expenseTotal = august2025Data.reduce(
-        (sum, day) => sum + day.expense,
-        0
-      );
-      return { incomeTotal, expenseTotal };
-    } else {
-      // Weekly view
-      const currentWeekData = allWeeksData.find(
-        (week) => week.week === selectedWeek
-      );
-      return currentWeekData
-        ? {
-            incomeTotal: currentWeekData.income.total,
-            expenseTotal: currentWeekData.expense.total,
-          }
-        : { incomeTotal: 0, expenseTotal: 0 };
+    try {
+      if (viewMode === "monthly") {
+        const currentMonthData = getCurrentMonthDaysOnly();
+        const incomeTotal = currentMonthData.reduce(
+          (sum, day) => sum + day.income,
+          0
+        );
+        const expenseTotal = currentMonthData.reduce(
+          (sum, day) => sum + day.expense,
+          0
+        );
+        return { incomeTotal, expenseTotal };
+      } else {
+        const currentWeekData = allWeeksData.find(
+          (week) => week.week === selectedWeek
+        );
+        return currentWeekData
+          ? {
+              incomeTotal: currentWeekData.income.total,
+              expenseTotal: currentWeekData.expense.total,
+            }
+          : { incomeTotal: 0, expenseTotal: 0 };
+      }
+    } catch (error) {
+      console.error("Error calculating totals:", error);
+      return { incomeTotal: 0, expenseTotal: 0 };
     }
   }, [allWeeksData, selectedWeek, viewMode]);
 
-  // Update info display based on view mode
   const currentViewInfo = useMemo(() => {
-    if (viewMode === "monthly") {
-      return {
-        title: "August 2025",
-        subtitle: "Monthly View • 31 Days",
-      };
-    } else {
-      const currentWeekData = allWeeksData.find(
-        (week) => week.week === selectedWeek
-      );
-      return currentWeekData
-        ? {
-            title: `Week ${currentWeekData.week}`,
-            subtitle: `${new Date(
-              currentWeekData.startDate
-            ).toLocaleDateString()} - ${new Date(
-              currentWeekData.endDate
-            ).toLocaleDateString()}`,
-          }
-        : { title: "Loading...", subtitle: "" };
+    try {
+      if (viewMode === "monthly") {
+        const now = new Date();
+        const monthName = now.toLocaleDateString("en-US", { month: "long" });
+        const year = now.getFullYear();
+        const daysInMonth = new Date(year, now.getMonth() + 1, 0).getDate();
+
+        return {
+          title: `${monthName} ${year}`,
+          subtitle: `Monthly View • ${daysInMonth} Days`,
+        };
+      } else {
+        const currentWeekData = allWeeksData.find(
+          (week) => week.week === selectedWeek
+        );
+        return currentWeekData
+          ? {
+              title: `Week ${currentWeekData.week}`,
+              subtitle: `${new Date(
+                currentWeekData.startDate
+              ).toLocaleDateString()} - ${new Date(
+                currentWeekData.endDate
+              ).toLocaleDateString()}`,
+            }
+          : { title: "Loading...", subtitle: "" };
+      }
+    } catch (error) {
+      console.error("Error generating view info:", error);
+      return { title: "Error", subtitle: "Unable to load view information" };
     }
   }, [allWeeksData, selectedWeek, viewMode]);
 
-  if (
-    loading ||
-    (!currentTotals.incomeTotal &&
-      !currentTotals.expenseTotal &&
-      allWeeksData.length === 0)
-  ) {
+  if (loading) {
     return (
       <div className={styles.container}>
         <div className={styles.mobileWrapper}>
@@ -209,14 +296,66 @@ export default function Dashboard() {
           <div
             style={{
               display: "flex",
+              flexDirection: "column",
               justifyContent: "center",
               alignItems: "center",
               height: "200px",
               color: "#f3f3f3",
               fontSize: "16px",
+              gap: "10px",
             }}
           >
-            Loading...
+            <div>Loading your dashboard...</div>
+            <div style={{ fontSize: "12px", opacity: 0.7 }}>
+              This may take a few moments
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && allWeeksData.length === 0) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.mobileWrapper}>
+          <ProfileIcon />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "200px",
+              color: "#f3f3f3",
+              fontSize: "16px",
+              gap: "15px",
+              textAlign: "center",
+              padding: "20px",
+            }}
+          >
+            <div style={{ color: "#ff6b6b", fontSize: "18px" }}>⚠️ Error</div>
+            <div style={{ fontSize: "14px", lineHeight: "1.4" }}>{error}</div>
+            <button
+              onClick={handleRetry}
+              style={{
+                background: "linear-gradient(135deg, #69ff6a, #40ff9f)",
+                color: "#000",
+                border: "none",
+                padding: "10px 20px",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "transform 0.2s",
+              }}
+              onMouseOver={(e) =>
+                (e.currentTarget.style.transform = "scale(1.05)")
+              }
+              onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
+            >
+              Try Again {retryCount > 0 && `(${retryCount + 1})`}
+            </button>
           </div>
         </div>
       </div>
@@ -228,6 +367,24 @@ export default function Dashboard() {
       <div className={styles.mobileWrapper}>
         <ProfileIcon />
         <WelcomeBack />
+
+        {error && allWeeksData.length > 0 && (
+          <div
+            style={{
+              background: "rgba(255, 193, 7, 0.1)",
+              border: "1px solid rgba(255, 193, 7, 0.3)",
+              borderRadius: "8px",
+              padding: "10px",
+              margin: "10px 0",
+              color: "#ffc107",
+              fontSize: "12px",
+              textAlign: "center",
+            }}
+          >
+            ⚠️ Using offline data - some features may be limited
+          </div>
+        )}
+
         <IncomeExpenseButtons
           onDataTypeChange={handleDataTypeChange}
           activeDataType={activeDataType}

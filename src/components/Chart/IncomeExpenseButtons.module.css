@@ -22,10 +22,32 @@
   color: #f3f3f3;
 }
 
-.active {
-  background-color: #ededed;
-  border-color: #000000;
-  color: #000000;
+/* Added specific styles for Income and Expense buttons */
+.incomeButton {
+  background-color: #a2faff; /* Dark Cyan - Income button fill */
+  border-color: #618d8f; /* Celeste - Income button outline */
+  color: #618d8f; /* Celeste - Income button text */
+  box-shadow: 0 0 0 2px #ededed;
+}
+
+.expenseButton {
+  background-color: #ffa2d4; /* Chinese Violet - Expense button fill */
+  border-color: #8f617a; /* Carnation Pink - Expense button outline */
+  color: #8f617a; /* Carnation Pink - Expense button text */
+  box-shadow: 0 0 0 2px #ededed;
+}
+.incomeButton.inactive {
+  background-color: #618d8f; /* Dark Cyan - Income button fill */
+  border-color: #a2faff; /* Celeste - Income button outline */
+  color: #a2faff; /* Celeste - Income button text */
+  box-shadow: none;
+}
+
+.expenseButton.inactive {
+  background-color: #8f617a; /* Chinese Violet - Expense button fill */
+  border-color: #ffa2d4; /* Carnation Pink - Expense button outline */
+  color: #ffa2d4; /* Carnation Pink - Expense button text */
+  box-shadow: none;
 }
 
 .dataButton:hover {
@@ -40,8 +62,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-/* Added styles for Y/M/W view toggle buttons */
 
 @media (max-width: 480px) {
   .dataButton {

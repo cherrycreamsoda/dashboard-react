@@ -1,6 +1,5 @@
 .calendarContainer {
   position: relative;
-  /* background-color: #0b0b0b; */
   background-color: rgb(15, 15, 15);
   border-radius: 24px;
   padding: 24px 24px 24px 24px;
@@ -57,9 +56,6 @@
 }
 
 .navButton {
-  /* background: #000000; Black background */
-  /* color: #f3f3f3; White symbols */
-  /* border: 2px solid #f3f3f3; */
   background: rgb(25, 25, 25);
   border: 2px solid rgb(55, 55, 55);
   color: rgb(194, 194, 194);
@@ -75,8 +71,8 @@
 
 .navButton:hover {
   background: #f3f3f3;
-  color: #000000; /* White symbols */
-  border: 2px solid #000000; /* Black outline */
+  color: #000000;
+  border: 2px solid #000000;
 }
 
 .weekDays {
@@ -99,7 +95,7 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 6px;
-  place-items: center; /* <-- This centers content both vertically and horizontally */
+  place-items: center;
 }
 
 .day {
@@ -146,16 +142,37 @@
 }
 
 .today {
-  background: #ededed; /* White fill */
-  color: #000000; /* Black text */
+  background: #000000;
+  color: #ededed;
   font-weight: 600;
-  border: 2px solid #000000; /* Black outline */
+  border: 2px solid #ededed;
 }
 
+/* Updated selected date with moving gradient and black outline/text */
 .selected {
-  background: #000000;
-  border: 2px solid #f3f3f3;
+  background: linear-gradient(45deg, #a2faff, #d1ceea, #ffa2d4);
+  background-size: 200% 200%;
+  animation: gradientMove 3s ease-in-out infinite;
+  border: 2px solid #ffffff;
+  color: #000000;
   font-weight: 600;
+}
+
+.today.selected {
+  border: 3px solid #000000; /* Inner border */
+  box-shadow: 0 0 0 3px #ededed; /* Outer border */
+}
+
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .eventDot {
@@ -177,9 +194,9 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #000000; /* Black background */
+  background: #000000;
   border: 2px solid #f3f3f3;
-  color: #f3f3f3; /* White symbols */
+  color: #f3f3f3;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -189,8 +206,8 @@
 
 .expandButton:hover {
   background: #f3f3f3;
-  color: #000000; /* White symbols */
-  border: 2px solid #000000; /* Black outline */
+  color: #000000;
+  border: 2px solid #000000;
 }
 
 .expandButton:active {
