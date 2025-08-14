@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import styles from "./Chart.module.css";
 import { getAugust2025Data } from "@/lib/mockData";
+import TimeframeButtons from "./TimeframeButtons";
 
 interface ChartDataPoint {
   day: string;
@@ -18,6 +19,7 @@ interface ChartProps {
   onDayChange?: (dayIndex: number) => void;
   viewMode: "yearly" | "monthly" | "weekly";
   monthlyData?: any; // Added monthlyData prop
+  onViewModeChange: (mode: "yearly" | "monthly" | "weekly") => void;
 }
 
 interface WeekData {
@@ -50,7 +52,8 @@ export default function Chart({
   selectedDay,
   onDayChange,
   viewMode,
-  monthlyData, // Added monthlyData prop
+  onViewModeChange,
+  monthlyData,
 }: ChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
@@ -498,6 +501,10 @@ export default function Chart({
 
   return (
     <div className={styles.chartContainer}>
+      <TimeframeButtons
+        viewMode={viewMode}
+        onViewModeChange={onViewModeChange}
+      />
       {selectedPoint !== null && animatedData[selectedPoint] && (
         <div
           className={styles.tooltip}

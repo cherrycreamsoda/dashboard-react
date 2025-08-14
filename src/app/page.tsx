@@ -232,10 +232,6 @@ export default function Dashboard() {
           incomeTotal={currentTotals.incomeTotal}
           expenseTotal={currentTotals.expenseTotal}
         />
-        <TimeframeButtons
-          viewMode={viewMode}
-          onViewModeChange={handleViewModeChange}
-        />
 
         <div className={styles.weekInfo}>
           <span>
@@ -250,6 +246,7 @@ export default function Dashboard() {
           onDayChange={handleDayChange}
           viewMode={viewMode}
           monthlyData={monthlyData}
+          onViewModeChange={handleViewModeChange}
         />
         <Calendar
           onWeekChange={handleWeekChange}
