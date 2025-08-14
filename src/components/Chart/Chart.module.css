@@ -2,6 +2,11 @@
   margin-bottom: min(10vw, 40px);
   position: relative;
   width: 100%;
+  background-color: rgb(15, 15, 15);
+  border-radius: 24px;
+  padding: 24px 24px 24px 24px;
+  backdrop-filter: blur(10px);
+  border: 2px solid #ffffff1f;
 }
 
 .tooltip {

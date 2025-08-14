@@ -1,10 +1,11 @@
 .calendarContainer {
   position: relative;
-  background-color: rgba(243, 243, 243, 0.05);
+  /* background-color: #0b0b0b; */
+  background-color: rgb(15, 15, 15);
   border-radius: 24px;
   padding: 24px 24px 24px 24px;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(243, 243, 243, 0.1);
+  border: 2px solid #ffffff1f;
   overflow: hidden;
   height: 360px;
 }
@@ -56,9 +57,12 @@
 }
 
 .navButton {
-  background: #000000; /* Black background */
-  border: 2px solid #f3f3f3;
-  color: #f3f3f3; /* White symbols */
+  /* background: #000000; Black background */
+  /* color: #f3f3f3; White symbols */
+  /* border: 2px solid #f3f3f3; */
+  background: rgb(25, 25, 25);
+  border: 2px solid rgb(55, 55, 55);
+  color: rgb(194, 194, 194);
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -70,7 +74,9 @@
 }
 
 .navButton:hover {
-  background: #333333;
+  background: #f3f3f3;
+  color: #000000; /* White symbols */
+  border: 2px solid #000000; /* Black outline */
 }
 
 .weekDays {
@@ -147,7 +153,7 @@
 }
 
 .selected {
-  background: rgba(243, 243, 243, 0.2);
+  background: #000000;
   border: 2px solid #f3f3f3;
   font-weight: 600;
 }
@@ -182,8 +188,9 @@
 }
 
 .expandButton:hover {
-  /* transform: translateX(-50%) scale(1.05); */
-  background: #333333;
+  background: #f3f3f3;
+  color: #000000; /* White symbols */
+  border: 2px solid #000000; /* Black outline */
 }
 
 .expandButton:active {
