@@ -7,6 +7,7 @@ import Chart from "@/components/Chart/Chart";
 import Calendar from "@/components/Calendar/Calendar";
 import { getAugust2025Data } from "@/lib/mockData";
 import TimeframeButtons from "../components/Chart/TimeframeButtons";
+import IncomeExpenseButtons from "@/components/Chart/IncomeExpenseButtons";
 
 interface ChartDataPoint {
   day: string;
@@ -226,7 +227,8 @@ export default function Dashboard() {
     <div className={styles.container}>
       <div className={styles.mobileWrapper}>
         <ProfileIcon />
-        <WelcomeBack
+        <WelcomeBack />
+        <IncomeExpenseButtons
           onDataTypeChange={handleDataTypeChange}
           activeDataType={activeDataType}
           incomeTotal={currentTotals.incomeTotal}
