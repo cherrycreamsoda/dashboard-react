@@ -6,6 +6,7 @@ import WelcomeBack from "@/components/WelcomeBack/WelcomeBack";
 import Chart from "@/components/Chart/Chart";
 import Calendar from "@/components/Calendar/Calendar";
 import { getAugust2025Data } from "@/lib/mockData";
+import TimeframeButtons from "../components/Chart/TimeframeButtons";
 
 interface ChartDataPoint {
   day: string;
@@ -230,9 +231,12 @@ export default function Dashboard() {
           activeDataType={activeDataType}
           incomeTotal={currentTotals.incomeTotal}
           expenseTotal={currentTotals.expenseTotal}
+        />
+        <TimeframeButtons
           viewMode={viewMode}
           onViewModeChange={handleViewModeChange}
         />
+
         <div className={styles.weekInfo}>
           <span>
             {currentViewInfo.title} • {currentViewInfo.subtitle}

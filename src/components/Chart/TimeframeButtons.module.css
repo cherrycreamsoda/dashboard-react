@@ -1,0 +1,48 @@
+.viewToggleContainer {
+  display: flex;
+  gap: min(2vw, 8px);
+  justify-content: center;
+  /* margin-top: min(4vw, 16px); */
+}
+.viewButton {
+  width: min(10vw, 40px);
+  height: min(10vw, 40px);
+  border-radius: 50%;
+  border: 2px solid;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  font-size: clamp(14px, 4vw, 16px);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.viewButton:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.viewButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.viewActive {
+  background-color: #ededed;
+  border-color: #000000;
+  color: #000000;
+}
+.viewInactive {
+  background-color: #000000;
+  border-color: #f3f3f3;
+  color: #f3f3f3;
+}
+
+@media (max-width: 480px) {
+  .viewButton {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+}
