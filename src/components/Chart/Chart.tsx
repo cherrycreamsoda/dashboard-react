@@ -17,6 +17,7 @@ interface ChartProps {
   allWeeksData: WeekData[];
   selectedDay?: number | null;
   onDayChange?: (dayIndex: number) => void;
+  onChartDateChange?: (date: Date) => void;
   viewMode: "yearly" | "monthly" | "weekly";
   monthlyData?: any;
   onViewModeChange: (mode: "yearly" | "monthly" | "weekly") => void;
@@ -24,6 +25,8 @@ interface ChartProps {
     title: string;
     subtitle: string;
   };
+  isTransitioning?: boolean;
+  selectedDate?: Date | null;
 }
 
 interface WeekData {
@@ -55,10 +58,13 @@ const Chart = memo(function Chart({
   allWeeksData,
   selectedDay,
   onDayChange,
+  onChartDateChange,
   viewMode,
   onViewModeChange,
   monthlyData,
   currentViewInfo,
+  isTransitioning = false,
+  selectedDate,
 }: ChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
@@ -70,6 +76,7 @@ const Chart = memo(function Chart({
   const [animatedData, setAnimatedData] = useState<AnimatedDataPoint[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const previousDataRef = useRef<ChartDataPoint[]>([]);
+  const [transitionProgress, setTransitionProgress] = useState(0);
 
   const allIncomeData = useMemo(() => {
     return allWeeksData.flatMap((week) => week.income.data);
@@ -215,6 +222,29 @@ const Chart = memo(function Chart({
     };
   }, [getCurrentData, animatedData.length, viewMode, easeInOutCubic]);
 
+  useEffect(() => {
+    if (isTransitioning) {
+      setTransitionProgress(0);
+      const startTime = performance.now();
+      const duration = 300;
+
+      const animateTransition = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        setTransitionProgress(progress);
+
+        if (progress < 1) {
+          requestAnimationFrame(animateTransition);
+        }
+      };
+
+      requestAnimationFrame(animateTransition);
+    } else {
+      setTransitionProgress(0);
+    }
+  }, [isTransitioning]);
+
   const drawChart = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || animatedData.length === 0) return;
@@ -241,6 +271,15 @@ const Chart = memo(function Chart({
 
     ctx.clearRect(0, 0, width, height);
 
+    const transitionOffset = isTransitioning ? transitionProgress * 50 : 0;
+    const transitionOpacity = isTransitioning
+      ? 1 - transitionProgress * 0.7
+      : 1;
+
+    ctx.globalAlpha = transitionOpacity;
+    ctx.save();
+    ctx.translate(0, transitionOffset);
+
     const dataPoints = animatedData.map((data, index) => ({
       x: paddingLeft + (index * chartWidth) / (animatedData.length - 1),
       y:
@@ -253,7 +292,6 @@ const Chart = memo(function Chart({
       date: data.date,
     }));
 
-    // Draw vertical lines
     ctx.strokeStyle = "rgba(243, 243, 243, 0.2)";
     ctx.lineWidth = 1;
     dataPoints.forEach((point) => {
@@ -271,7 +309,6 @@ const Chart = memo(function Chart({
     );
 
     if (dataType === "income") {
-      // Income chart uses Celeste (#a2faff) for shaded area
       gradient.addColorStop(0.0, "rgba(162, 250, 255, 0.45)");
       gradient.addColorStop(0.2, "rgba(162, 250, 255, 0.35)");
       gradient.addColorStop(0.4, "rgba(162, 250, 255, 0.22)");
@@ -280,7 +317,6 @@ const Chart = memo(function Chart({
       gradient.addColorStop(0.9, "rgba(162, 250, 255, 0.03)");
       gradient.addColorStop(1.0, "rgba(23, 23, 23, 0.01)");
     } else {
-      // Expense chart uses Carnation Pink (#ffa2d4) for shaded area
       gradient.addColorStop(0.0, "rgba(255, 162, 212, 0.45)");
       gradient.addColorStop(0.2, "rgba(255, 162, 212, 0.35)");
       gradient.addColorStop(0.4, "rgba(255, 162, 212, 0.22)");
@@ -290,7 +326,6 @@ const Chart = memo(function Chart({
       gradient.addColorStop(1.0, "rgba(23, 23, 23, 0.01)");
     }
 
-    // Draw filled area with smooth curves
     ctx.beginPath();
     ctx.moveTo(dataPoints[0].x, height - paddingBottom);
 
@@ -348,7 +383,6 @@ const Chart = memo(function Chart({
       }
     }
 
-    // Income uses Dark Cyan (#618d8f), Expense uses Chinese Violet (#8f617a)
     ctx.strokeStyle = dataType === "income" ? "#618d8f" : "#8f617a";
     ctx.lineWidth = 3;
     ctx.stroke();
@@ -377,13 +411,11 @@ const Chart = memo(function Chart({
         ctx.lineWidth = 2;
         ctx.stroke();
       } else {
-        // Income uses Dark Cyan (#618d8f), Expense uses Chinese Violet (#8f617a)
         ctx.fillStyle = dataType === "income" ? "#618d8f" : "#8f617a";
         ctx.fill();
       }
     });
 
-    // ... existing code for text rendering ...
     ctx.fillStyle = "#f3f3f3";
     ctx.font =
       "12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
@@ -393,7 +425,7 @@ const Chart = memo(function Chart({
       if (selectedPoint !== null && animatedData[selectedPoint]) {
         const selectedData = animatedData[selectedPoint];
         const selectedPointData = dataPoints[selectedPoint];
-        ctx.globalAlpha = 1;
+        ctx.globalAlpha = transitionOpacity;
         ctx.fillText(
           selectedData.date
             ? new Date(selectedData.date).toLocaleDateString("en-US", {
@@ -407,11 +439,14 @@ const Chart = memo(function Chart({
       }
     } else {
       dataPoints.forEach((point, index) => {
-        const opacity = selectedPoint === index ? 1 : 0.7;
+        const opacity =
+          selectedPoint === index ? transitionOpacity : transitionOpacity * 0.7;
         ctx.globalAlpha = opacity;
         ctx.fillText(animatedData[index].day, point.x, height - 10);
       });
     }
+
+    ctx.restore();
     ctx.globalAlpha = 1;
   }, [
     animatedData,
@@ -421,6 +456,8 @@ const Chart = memo(function Chart({
     minValue,
     valueRange,
     dataType,
+    isTransitioning,
+    transitionProgress,
   ]);
 
   useEffect(() => {
@@ -442,6 +479,8 @@ const Chart = memo(function Chart({
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
 
+      console.log("DEBUG: Canvas clicked at:", x, y);
+
       const width = rect.width;
       const height = rect.height;
       const paddingTop = 40;
@@ -457,7 +496,18 @@ const Chart = memo(function Chart({
           paddingTop +
           chartHeight -
           ((data.currentValue - minValue) / valueRange) * chartHeight,
+        data: data,
+        index: index,
       }));
+
+      console.log("DEBUG: Data points for click detection:");
+      dataPoints.forEach((p, i) => {
+        console.log(
+          `  Point ${i}: x=${p.x.toFixed(1)}, y=${p.y.toFixed(1)}, date=${
+            p.data.date
+          }, day=${p.data.day}`
+        );
+      });
 
       let closestIndex = 0;
       let closestDistance = Number.POSITIVE_INFINITY;
@@ -466,6 +516,7 @@ const Chart = memo(function Chart({
         const distance = Math.sqrt(
           Math.pow(x - point.x, 2) + Math.pow(y - point.y, 2)
         );
+        console.log(`DEBUG: Point ${index} distance: ${distance.toFixed(1)}`);
         if (distance < closestDistance && distance < 30) {
           closestDistance = distance;
           closestIndex = index;
@@ -473,13 +524,47 @@ const Chart = memo(function Chart({
       });
 
       if (closestDistance < 30) {
+        console.log("DEBUG: Chart point clicked - closestIndex:", closestIndex);
+        console.log("DEBUG: Clicked data point:", animatedData[closestIndex]);
+        console.log(
+          "DEBUG: Data point date:",
+          animatedData[closestIndex]?.date
+        );
+        console.log("DEBUG: Data point day:", animatedData[closestIndex]?.day);
+
         setSelectedPoint(closestIndex);
-        if (onDayChange) {
+
+        if (onChartDateChange && animatedData[closestIndex]?.date) {
+          const clickedDate = new Date(animatedData[closestIndex].date);
+          console.log(
+            "DEBUG: Chart calling onChartDateChange with date:",
+            clickedDate
+          );
+          console.log(
+            "DEBUG: Date day of week:",
+            clickedDate.getDay(),
+            "Date:",
+            clickedDate.getDate()
+          );
+          onChartDateChange(clickedDate);
+        } else if (onDayChange) {
+          // Fallback to old method if new handler not available
+          console.log(
+            "DEBUG: Chart calling onDayChange with closestIndex:",
+            closestIndex
+          );
           onDayChange(closestIndex);
+        } else {
+          console.log("DEBUG: No callback handlers available for chart click");
         }
+      } else {
+        console.log(
+          "DEBUG: Click was too far from any point, closest distance:",
+          closestDistance
+        );
       }
     },
-    [animatedData, minValue, valueRange, onDayChange]
+    [animatedData, minValue, valueRange, onDayChange, onChartDateChange]
   );
 
   useEffect(() => {
@@ -527,17 +612,19 @@ const Chart = memo(function Chart({
         viewMode={viewMode}
         onViewModeChange={onViewModeChange}
       />
-      {selectedPoint !== null && animatedData[selectedPoint] && (
-        <div
-          className={styles.tooltip}
-          style={{
-            left: `${tooltipPosition.x - 30}px`,
-            top: `${tooltipPosition.y - 50}px`,
-          }}
-        >
-          ${animatedData[selectedPoint].currentValue.toFixed(2)}
-        </div>
-      )}
+      {selectedPoint !== null &&
+        animatedData[selectedPoint] &&
+        !isTransitioning && (
+          <div
+            className={styles.tooltip}
+            style={{
+              left: `${tooltipPosition.x - 30}px`,
+              top: `${tooltipPosition.y - 50}px`,
+            }}
+          >
+            ${animatedData[selectedPoint].currentValue.toFixed(2)}
+          </div>
+        )}
       <canvas ref={canvasRef} className={styles.canvas} />
       <div className={styles.weekInfo}>
         <span>

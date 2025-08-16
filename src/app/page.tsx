@@ -7,6 +7,7 @@ import Chart from "@/components/Chart/Chart";
 import Calendar from "@/components/Calendar/Calendar";
 import { getCurrentMonthDaysOnly } from "@/lib/mockData";
 import IncomeExpenseButtons from "@/components/Chart/IncomeExpenseButtons";
+import Toast from "@/components/Toast/Toast";
 
 interface ChartDataPoint {
   day: string;
@@ -19,6 +20,7 @@ interface WeekData {
   week: number;
   startDate: string;
   endDate: string;
+  dates: string[];
   income: {
     data: ChartDataPoint[];
     total: number;
@@ -43,29 +45,45 @@ export default function Dashboard() {
     "weekly"
   );
   const [monthlyData, setMonthlyData] = useState<any>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     if (allWeeksData.length > 0) {
       const today = new Date();
-      const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD format
+      const todayStr = `${today.getFullYear()}-${String(
+        today.getMonth() + 1
+      ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
       for (const weekData of allWeeksData) {
-        const startDate = new Date(weekData.startDate);
-        const endDate = new Date(weekData.endDate);
-
-        if (today >= startDate && today <= endDate) {
+        if (weekData.dates && weekData.dates.includes(todayStr)) {
           setSelectedWeek(weekData.week);
-
-          const daysDiff = Math.floor(
-            (today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+          const dayIndex = weekData.dates.indexOf(todayStr);
+          setSelectedDay(dayIndex);
+          setSelectedDate(today);
+          console.log(
+            "[v0] Initialized to current date:",
+            todayStr,
+            "week:",
+            weekData.week,
+            "dayIndex:",
+            dayIndex
           );
-          setSelectedDay(daysDiff);
           return;
         }
       }
 
       setSelectedWeek(1);
-      setSelectedDay(3); // Wednesday
+      setSelectedDay(3);
+      const currentWeekData = allWeeksData.find((week) => week.week === 1);
+      if (currentWeekData) {
+        const startDate = new Date(currentWeekData.startDate);
+        const selectedDateInWeek = new Date(startDate);
+        selectedDateInWeek.setDate(startDate.getDate() + 3);
+        setSelectedDate(selectedDateInWeek);
+      }
     }
   }, [allWeeksData]);
 
@@ -75,7 +93,7 @@ export default function Dashboard() {
 
     try {
       const promises = Array.from({ length: 6 }, (_, i) =>
-        fetch(`/api/chart-data?week=${i + 1}`).then(async (res) => {
+        fetch(`/api/weeks?week=${i + 1}`).then(async (res) => {
           if (!res.ok) {
             throw new Error(`HTTP ${res.status}: ${res.statusText}`);
           }
@@ -96,7 +114,8 @@ export default function Dashboard() {
           weekData.income &&
           weekData.expense &&
           Array.isArray(weekData.income.data) &&
-          Array.isArray(weekData.expense.data)
+          Array.isArray(weekData.expense.data) &&
+          Array.isArray(weekData.dates)
       );
 
       if (validData.length === 0) {
@@ -112,48 +131,6 @@ export default function Dashboard() {
           ? error.message
           : "Failed to load chart data. Please check your connection.";
       setError(errorMessage);
-
-      if (retryCount < 2) {
-        console.log("API failed, using fallback mock data");
-        try {
-          const mockData = getCurrentMonthDaysOnly();
-          const fallbackWeeks: WeekData[] = [];
-          for (let week = 1; week <= 6; week++) {
-            const weekDays = mockData.filter(
-              (_, index) => Math.floor(index / 7) + 1 === week
-            );
-            if (weekDays.length > 0) {
-              fallbackWeeks.push({
-                week,
-                startDate: weekDays[0].date,
-                endDate: weekDays[weekDays.length - 1].date,
-                income: {
-                  data: weekDays.map((day) => ({
-                    day: day.dayOfWeek,
-                    value: day.income,
-                    fullDay: day.fullDayName,
-                    date: day.date,
-                  })),
-                  total: weekDays.reduce((sum, day) => sum + day.income, 0),
-                },
-                expense: {
-                  data: weekDays.map((day) => ({
-                    day: day.dayOfWeek,
-                    value: day.expense,
-                    fullDay: day.fullDayName,
-                    date: day.date,
-                  })),
-                  total: weekDays.reduce((sum, day) => sum + day.expense, 0),
-                },
-              });
-            }
-          }
-          setAllWeeksData(fallbackWeeks);
-          setError(null);
-        } catch (fallbackError) {
-          console.error("Fallback data generation failed:", fallbackError);
-        }
-      }
     } finally {
       setLoading(false);
     }
@@ -201,28 +178,225 @@ export default function Dashboard() {
   };
 
   const handleViewModeChange = (mode: "yearly" | "monthly" | "weekly") => {
-    setViewMode(mode);
-    if (mode === "monthly") {
-      const today = new Date();
-      const currentMonthData = getCurrentMonthDaysOnly();
-      const todayStr = today.toISOString().split("T")[0];
-      const dayIndex = currentMonthData.findIndex(
-        (dayData) => dayData.date === todayStr
-      );
-      setSelectedDay(dayIndex !== -1 ? dayIndex : 15);
-    } else {
-      if (selectedDay === null) {
-        setSelectedDay(3);
+    setIsTransitioning(true);
+
+    setTimeout(() => {
+      setViewMode(mode);
+
+      if (selectedDate) {
+        if (mode === "monthly") {
+          const dayOfMonth = selectedDate.getDate() - 1;
+          setSelectedDay(dayOfMonth);
+        } else if (mode === "weekly") {
+          const selectedDateStr = selectedDate.toISOString().split("T")[0];
+          for (const weekData of allWeeksData) {
+            const startDate = new Date(weekData.startDate);
+            const endDate = new Date(weekData.endDate);
+            if (selectedDate >= startDate && selectedDate <= endDate) {
+              setSelectedWeek(weekData.week);
+              const daysDiff = Math.floor(
+                (selectedDate.getTime() - startDate.getTime()) /
+                  (1000 * 60 * 60 * 24)
+              );
+              setSelectedDay(daysDiff);
+              break;
+            }
+          }
+        }
+      } else {
+        if (mode === "monthly") {
+          const today = new Date();
+          const currentMonthData = getCurrentMonthDaysOnly();
+          const todayStr = today.toISOString().split("T")[0];
+          const dayIndex = currentMonthData.findIndex(
+            (dayData) => dayData.date === todayStr
+          );
+          setSelectedDay(dayIndex !== -1 ? dayIndex : 15);
+          setSelectedDate(today);
+        } else {
+          if (selectedDay === null) {
+            setSelectedDay(3);
+            const currentWeekData = allWeeksData.find(
+              (week) => week.week === selectedWeek
+            );
+            if (currentWeekData) {
+              const startDate = new Date(currentWeekData.startDate);
+              const selectedDateInWeek = new Date(startDate);
+              selectedDateInWeek.setDate(startDate.getDate() + 3);
+              setSelectedDate(selectedDateInWeek);
+            }
+          }
+        }
       }
+
+      setIsTransitioning(false);
+    }, 300);
+  };
+
+  const handleDayChange = (dayIndex: number) => {
+    console.log("[v0] handleDayChange called with dayIndex:", dayIndex);
+    console.log("[v0] Current viewMode:", viewMode);
+    console.log("[v0] Current selectedWeek:", selectedWeek);
+
+    setSelectedDay(dayIndex);
+
+    if (viewMode === "monthly") {
+      const currentMonthData = getCurrentMonthDaysOnly();
+      console.log(
+        "[v0] Monthly mode - currentMonthData length:",
+        currentMonthData.length
+      );
+      if (dayIndex >= 0 && dayIndex < currentMonthData.length) {
+        const selectedDateStr = currentMonthData[dayIndex].date;
+        const newDate = new Date(selectedDateStr);
+        console.log(
+          "[v0] Monthly mode - setting date to:",
+          newDate,
+          "from dateStr:",
+          selectedDateStr
+        );
+        setSelectedDate(newDate);
+      }
+    } else if (viewMode === "weekly") {
+      const currentWeekData = allWeeksData.find(
+        (week) => week.week === selectedWeek
+      );
+      console.log("[v0] Weekly mode - currentWeekData:", currentWeekData);
+
+      if (currentWeekData && currentWeekData.dates) {
+        console.log("[v0] Available dates:", currentWeekData.dates);
+        console.log(
+          "[v0] Looking for dayIndex:",
+          dayIndex,
+          "in dates array of length:",
+          currentWeekData.dates.length
+        );
+
+        if (dayIndex >= 0 && dayIndex < currentWeekData.dates.length) {
+          const selectedDateStr = currentWeekData.dates[dayIndex];
+          const newSelectedDate = new Date(selectedDateStr);
+          console.log(
+            "[v0] Weekly mode - setting date to:",
+            newSelectedDate,
+            "for dayIndex:",
+            dayIndex
+          );
+          setSelectedDate(newSelectedDate);
+        } else {
+          console.log(
+            "[v0] Invalid dayIndex:",
+            dayIndex,
+            "for dates array length:",
+            currentWeekData.dates.length
+          );
+        }
+      }
+    }
+  };
+
+  const handleChartDateChange = (date: Date) => {
+    console.log("[v0] handleChartDateChange called with date:", date);
+    setSelectedDate(date);
+
+    if (viewMode === "weekly") {
+      const dateStr = date.toISOString().split("T")[0];
+      console.log("[v0] Looking for dateStr:", dateStr, "in weeks data");
+
+      for (const weekData of allWeeksData) {
+        if (weekData.dates && weekData.dates.includes(dateStr)) {
+          console.log("[v0] Found matching week:", weekData.week);
+          setSelectedWeek(weekData.week);
+
+          const dayIndex = weekData.dates.indexOf(dateStr);
+          console.log(
+            "[v0] Chart to calendar sync - dayIndex:",
+            dayIndex,
+            "for date:",
+            dateStr
+          );
+          setSelectedDay(dayIndex);
+          break;
+        }
+      }
+    } else if (viewMode === "monthly") {
+      const dayOfMonth = date.getDate() - 1;
+      console.log("[v0] Monthly chart sync - dayOfMonth:", dayOfMonth);
+      setSelectedDay(dayOfMonth);
+    }
+  };
+
+  const handleCalendarDateChange = (date: Date) => {
+    console.log("[v0] handleCalendarDateChange called with date:", date);
+    console.log(
+      "[v0] Date details - getDay():",
+      date.getDay(),
+      "getDate():",
+      date.getDate()
+    );
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const dateStr = `${year}-${month}-${day}`;
+
+    console.log("[v0] Corrected dateStr:", dateStr);
+    setShowToast(false);
+
+    if (viewMode === "monthly") {
+      const currentViewingDate = new Date();
+      const currentViewingMonth = currentViewingDate.getMonth();
+      const currentViewingYear = currentViewingDate.getFullYear();
+
+      // Check if clicked date is outside the current viewing month
+      if (
+        date.getMonth() !== currentViewingMonth ||
+        date.getFullYear() !== currentViewingYear
+      ) {
+        console.log("[v0] Date outside current viewing month:", dateStr);
+        setToastMessage("Data does not exist for given date");
+        setShowToast(true);
+        return;
+      }
+    }
+
+    console.log("[v0] Looking for dateStr:", dateStr, "in weeks data");
+
+    let dateFound = false;
+    for (const weekData of allWeeksData) {
+      if (weekData.dates && weekData.dates.includes(dateStr)) {
+        console.log("[v0] Found matching week:", weekData.week);
+        setSelectedWeek(weekData.week);
+        setSelectedDate(date);
+
+        const dayIndex = weekData.dates.indexOf(dateStr);
+        console.log(
+          "[v0] Calendar to chart sync - dayIndex:",
+          dayIndex,
+          "for date:",
+          dateStr
+        );
+        setSelectedDay(dayIndex);
+        dateFound = true;
+        break;
+      }
+    }
+
+    if (!dateFound) {
+      console.log("[v0] Date not found in weeks data:", dateStr);
+      setToastMessage("Data does not exist for given date");
+      setShowToast(true);
     }
   };
 
   const handleWeekChange = (weekNumber: number) => {
     setSelectedWeek(weekNumber);
-  };
-
-  const handleDayChange = (dayIndex: number) => {
-    setSelectedDay(dayIndex);
+    const weekData = allWeeksData.find((week) => week.week === weekNumber);
+    if (weekData && selectedDay !== null) {
+      const startDate = new Date(weekData.startDate);
+      const newSelectedDate = new Date(startDate);
+      newSelectedDate.setDate(startDate.getDate() + selectedDay);
+      setSelectedDate(newSelectedDate);
+    }
   };
 
   const currentTotals = useMemo(() => {
@@ -287,6 +461,11 @@ export default function Dashboard() {
       return { title: "Error", subtitle: "Unable to load view information" };
     }
   }, [allWeeksData, selectedWeek, viewMode]);
+
+  const handleToastClose = () => {
+    setShowToast(false);
+    setToastMessage(null);
+  };
 
   if (loading) {
     return (
@@ -364,6 +543,13 @@ export default function Dashboard() {
 
   return (
     <div className={styles.container}>
+      <Toast
+        message={toastMessage || ""}
+        isVisible={showToast}
+        onClose={handleToastClose}
+        duration={5000}
+      />
+
       <div className={styles.mobileWrapper}>
         <ProfileIcon />
         <WelcomeBack />
@@ -398,16 +584,21 @@ export default function Dashboard() {
           allWeeksData={allWeeksData}
           selectedDay={selectedDay}
           onDayChange={handleDayChange}
+          onChartDateChange={handleChartDateChange}
           viewMode={viewMode}
           monthlyData={monthlyData}
           onViewModeChange={handleViewModeChange}
           currentViewInfo={currentViewInfo}
+          isTransitioning={isTransitioning}
+          selectedDate={selectedDate}
         />
         <Calendar
           onWeekChange={handleWeekChange}
           onDayChange={handleDayChange}
           selectedDay={selectedDay}
           viewMode={viewMode}
+          selectedDate={selectedDate}
+          onDateChange={handleCalendarDateChange}
         />
       </div>
     </div>

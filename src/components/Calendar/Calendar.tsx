@@ -13,6 +13,8 @@ interface CalendarProps {
   onDayChange?: (dayIndex: number) => void;
   selectedDay?: number | null;
   viewMode?: "yearly" | "monthly" | "weekly";
+  selectedDate?: Date | null;
+  onDateChange?: (date: Date) => void;
 }
 
 const Calendar = memo(function Calendar({
@@ -20,6 +22,8 @@ const Calendar = memo(function Calendar({
   onDayChange,
   selectedDay,
   viewMode = "weekly",
+  selectedDate: propSelectedDate,
+  onDateChange,
 }: CalendarProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -35,9 +39,16 @@ const Calendar = memo(function Calendar({
   );
 
   useEffect(() => {
-    const today = new Date();
-    setSelectedDate(today);
-  }, []);
+    if (propSelectedDate) {
+      setSelectedDate(propSelectedDate);
+      setCurrentViewDate(
+        new Date(propSelectedDate.getFullYear(), propSelectedDate.getMonth(), 1)
+      );
+    } else {
+      const today = new Date();
+      setSelectedDate(today);
+    }
+  }, [propSelectedDate]);
 
   const { todayDay, todayMonth, todayYear } = useMemo(() => {
     const actualToday = new Date();
@@ -106,30 +117,72 @@ const Calendar = memo(function Calendar({
   const handleDateClick = useCallback(
     (day: number, month: number, year: number) => {
       const clickedDate = new Date(year, month, day);
+      console.log(
+        "DEBUG: Calendar date clicked - day:",
+        day,
+        "month:",
+        month,
+        "year:",
+        year
+      );
+      console.log("DEBUG: Created clickedDate:", clickedDate);
+      console.log(
+        "DEBUG: Date details - getDay():",
+        clickedDate.getDay(),
+        "getDate():",
+        clickedDate.getDate()
+      );
+      console.log("DEBUG: Is Saturday?", clickedDate.getDay() === 6);
+      console.log(
+        "DEBUG: Date string:",
+        clickedDate.toISOString().split("T")[0]
+      );
+
       setSelectedDate(clickedDate);
 
-      if (viewMode === "weekly") {
-        const weekNumber = getWeekFromDate(clickedDate);
-        if (onWeekChange) {
-          onWeekChange(weekNumber);
-        }
+      if (onDateChange) {
+        console.log("DEBUG: Calling onDateChange with:", clickedDate);
+        onDateChange(clickedDate);
+      } else {
+        console.log("DEBUG: No onDateChange callback, using fallback logic");
+        if (viewMode === "weekly") {
+          const weekNumber = getWeekFromDate(clickedDate);
+          console.log("DEBUG: Calculated week number:", weekNumber);
+          if (onWeekChange) {
+            onWeekChange(weekNumber);
+          }
 
-        if (onDayChange) {
-          const dayOfWeek = clickedDate.getDay();
-          onDayChange(dayOfWeek);
-        }
-      } else if (viewMode === "monthly") {
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-        if (month === currentMonth && year === currentYear) {
-          const chartIndex = day - 1;
-          if (chartIndex >= 0 && chartIndex < 31 && onDayChange) {
-            onDayChange(chartIndex);
+          if (onDayChange) {
+            // Don't use getDay() directly as it returns 0-6 for Sunday-Saturday
+            // Instead, we need to find the position of this date within the week's data
+            console.log(
+              "DEBUG: Weekly fallback - need to calculate proper day index"
+            );
+
+            // For fallback, we'll use a simple day-of-week calculation
+            // but this should ideally be handled by the onDateChange callback
+            const dayOfWeek = clickedDate.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+            console.log(
+              "DEBUG: Weekly fallback - dayOfWeek:",
+              dayOfWeek,
+              "calling onDayChange"
+            );
+            onDayChange(dayOfWeek);
+          }
+        } else if (viewMode === "monthly") {
+          const currentMonth = new Date().getMonth();
+          const currentYear = new Date().getFullYear();
+          if (month === currentMonth && year === currentYear) {
+            const chartIndex = day - 1;
+            console.log("DEBUG: Monthly fallback - chartIndex:", chartIndex);
+            if (chartIndex >= 0 && chartIndex < 31 && onDayChange) {
+              onDayChange(chartIndex);
+            }
           }
         }
       }
     },
-    [viewMode, onWeekChange, onDayChange]
+    [viewMode, onWeekChange, onDayChange, onDateChange]
   );
 
   const handleMonthNavigation = useCallback((direction: "prev" | "next") => {
@@ -162,7 +215,12 @@ const Calendar = memo(function Calendar({
           <div
             key={`prev-${day}`}
             className={styles.dayInactive}
-            onClick={() => handleDateClick(day, prevMonth, prevYear)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log("DEBUG: Previous month day clicked:", day);
+              handleDateClick(day, prevMonth, prevYear);
+            }}
           >
             {day}
           </div>
@@ -181,11 +239,31 @@ const Calendar = memo(function Calendar({
           dayClasses.push(styles.selected);
         }
 
+        const isSaturday = new Date(year, month, day).getDay() === 6;
+
         days.push(
           <div
             key={day}
             className={dayClasses.join(" ")}
-            onClick={() => handleDateClick(day, month, year)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log(
+                "DEBUG: Current month day clicked:",
+                day,
+                "month:",
+                month,
+                "year:",
+                year
+              );
+              console.log("DEBUG: Is Saturday?", isSaturday);
+              console.log(
+                "DEBUG: Day of week will be:",
+                new Date(year, month, day).getDay()
+              );
+              handleDateClick(day, month, year);
+            }}
+            style={{ cursor: "pointer", userSelect: "none" }}
           >
             {day}
             {hasEvent(day, month, year) && (
@@ -206,7 +284,12 @@ const Calendar = memo(function Calendar({
           <div
             key={`next-${day}`}
             className={styles.dayInactive}
-            onClick={() => handleDateClick(day, nextMonth, nextYear)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log("DEBUG: Next month day clicked:", day);
+              handleDateClick(day, nextMonth, nextYear);
+            }}
           >
             {day}
           </div>

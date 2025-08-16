@@ -138,6 +138,24 @@ export const getWeeklyDataFromDaily = (
   const startDate = weekDays[0].date;
   const endDate = weekDays[weekDays.length - 1].date;
 
+  // Verify we have exactly 7 days and they form a complete week
+  const startDateObj = new Date(startDate);
+  const endDateObj = new Date(endDate);
+
+  // Ensure start is Sunday (day 0) and end is Saturday (day 6)
+  if (startDateObj.getDay() !== 0) {
+    console.warn(
+      `Week ${weekNumber} doesn't start on Sunday:`,
+      startDateObj.getDay()
+    );
+  }
+  if (endDateObj.getDay() !== 6) {
+    console.warn(
+      `Week ${weekNumber} doesn't end on Saturday:`,
+      endDateObj.getDay()
+    );
+  }
+
   return {
     week: weekNumber,
     startDate,
@@ -180,6 +198,16 @@ export const getWeekFromDate = (date: Date): number => {
   const allData = getCurrentMonthData();
   if (allData.length === 0) return 1;
 
+  const dateStr = date.toISOString().split("T")[0];
+
+  // First try to find exact date match
+  for (const dayData of allData) {
+    if (dayData.date === dateStr) {
+      return dayData.week;
+    }
+  }
+
+  // Fallback to calculation if exact match not found
   const startDate = new Date(allData[0].date);
   const diffTime = date.getTime() - startDate.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
