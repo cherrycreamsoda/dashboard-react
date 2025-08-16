@@ -87,22 +87,58 @@ const Chart = memo(function Chart({
   }, [allWeeksData]);
 
   const { minValue, valueRange } = useMemo(() => {
-    const allValues = [...allIncomeData, ...allExpenseData].map((d) => d.value);
+    let allValues: number[] = [];
+
+    if (viewMode === "monthly") {
+      // Use monthly data for scaling when in monthly mode
+      if (monthlyData) {
+        const monthlyIncomeValues = monthlyData.income.data.map(
+          (d: ChartDataPoint) => d.value
+        );
+        const monthlyExpenseValues = monthlyData.expense.data.map(
+          (d: ChartDataPoint) => d.value
+        );
+        allValues = [...monthlyIncomeValues, ...monthlyExpenseValues];
+      } else {
+        // Fallback to generated monthly data
+        const currentMonthData = getCurrentMonthDaysOnly();
+        allValues = currentMonthData.flatMap((day) => [
+          day.income,
+          day.expense,
+        ]);
+      }
+    } else {
+      // Use weekly data for scaling when in weekly mode
+      allValues = [...allIncomeData, ...allExpenseData].map((d) => d.value);
+    }
+
     const maxValue = Math.max(...allValues);
     const minValue = Math.min(...allValues);
     const valueRange = maxValue - minValue || 1;
     return { minValue, valueRange };
-  }, [allIncomeData, allExpenseData]);
+  }, [allIncomeData, allExpenseData, viewMode, monthlyData]);
 
   const getCurrentData = useMemo(() => {
+    console.log(
+      "[v0] Chart getCurrentData - viewMode:",
+      viewMode,
+      "selectedWeek:",
+      selectedWeek,
+      "selectedDay:",
+      selectedDay
+    );
+
     if (viewMode === "monthly") {
       if (monthlyData) {
-        return dataType === "income"
-          ? monthlyData.income.data
-          : monthlyData.expense.data;
+        const data =
+          dataType === "income"
+            ? monthlyData.income.data
+            : monthlyData.expense.data;
+        console.log("[v0] Chart using monthlyData, length:", data.length);
+        return data;
       }
       const currentMonthData = getCurrentMonthDaysOnly();
-      return currentMonthData.map((day, index) => ({
+      const data = currentMonthData.map((day, index) => ({
         day: day.dayOfMonth.toString(),
         value: dataType === "income" ? day.income : day.expense,
         fullDay: `${day.fullDayName}, ${new Date(day.date).toLocaleDateString(
@@ -114,15 +150,27 @@ const Chart = memo(function Chart({
         )}`,
         date: day.date,
       }));
+      console.log(
+        "[v0] Chart using generated monthly data, length:",
+        data.length
+      );
+      return data;
     } else {
       const currentWeekData = allWeeksData.find(
         (week) => week.week === selectedWeek
       );
-      return currentWeekData
+      const data = currentWeekData
         ? dataType === "income"
           ? currentWeekData.income.data
           : currentWeekData.expense.data
         : [];
+      console.log(
+        "[v0] Chart using weekly data for week:",
+        selectedWeek,
+        "length:",
+        data.length
+      );
+      return data;
     }
   }, [viewMode, monthlyData, dataType, allWeeksData, selectedWeek]);
 
@@ -221,6 +269,19 @@ const Chart = memo(function Chart({
       }
     };
   }, [getCurrentData, animatedData.length, viewMode, easeInOutCubic]);
+
+  useEffect(() => {
+    console.log(
+      "[v0] Chart selectedDay effect - selectedDay:",
+      selectedDay,
+      "viewMode:",
+      viewMode
+    );
+    if (selectedDay !== null && selectedDay !== undefined) {
+      console.log("[v0] Chart setting selectedPoint to:", selectedDay);
+      setSelectedPoint(selectedDay);
+    }
+  }, [selectedDay]);
 
   useEffect(() => {
     if (isTransitioning) {
@@ -464,12 +525,6 @@ const Chart = memo(function Chart({
     drawChart();
   }, [drawChart]);
 
-  useEffect(() => {
-    if (selectedDay !== null && selectedDay !== undefined) {
-      setSelectedPoint(selectedDay);
-    }
-  }, [selectedDay]);
-
   const handleCanvasClick = useCallback(
     (event: MouseEvent) => {
       const canvas = canvasRef.current;
@@ -479,7 +534,7 @@ const Chart = memo(function Chart({
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
 
-      console.log("DEBUG: Canvas clicked at:", x, y);
+      console.log("[v0] Chart canvas clicked at:", x, y, "viewMode:", viewMode);
 
       const width = rect.width;
       const height = rect.height;
@@ -500,14 +555,10 @@ const Chart = memo(function Chart({
         index: index,
       }));
 
-      console.log("DEBUG: Data points for click detection:");
-      dataPoints.forEach((p, i) => {
-        console.log(
-          `  Point ${i}: x=${p.x.toFixed(1)}, y=${p.y.toFixed(1)}, date=${
-            p.data.date
-          }, day=${p.data.day}`
-        );
-      });
+      console.log(
+        "[v0] Chart data points for click detection:",
+        dataPoints.length
+      );
 
       let closestIndex = 0;
       let closestDistance = Number.POSITIVE_INFINITY;
@@ -516,7 +567,6 @@ const Chart = memo(function Chart({
         const distance = Math.sqrt(
           Math.pow(x - point.x, 2) + Math.pow(y - point.y, 2)
         );
-        console.log(`DEBUG: Point ${index} distance: ${distance.toFixed(1)}`);
         if (distance < closestDistance && distance < 30) {
           closestDistance = distance;
           closestIndex = index;
@@ -524,47 +574,43 @@ const Chart = memo(function Chart({
       });
 
       if (closestDistance < 30) {
-        console.log("DEBUG: Chart point clicked - closestIndex:", closestIndex);
-        console.log("DEBUG: Clicked data point:", animatedData[closestIndex]);
+        console.log("[v0] Chart point clicked - closestIndex:", closestIndex);
         console.log(
-          "DEBUG: Data point date:",
-          animatedData[closestIndex]?.date
+          "[v0] Chart clicked data point:",
+          animatedData[closestIndex]
         );
-        console.log("DEBUG: Data point day:", animatedData[closestIndex]?.day);
 
         setSelectedPoint(closestIndex);
 
         if (onChartDateChange && animatedData[closestIndex]?.date) {
           const clickedDate = new Date(animatedData[closestIndex].date);
           console.log(
-            "DEBUG: Chart calling onChartDateChange with date:",
+            "[v0] Chart calling onChartDateChange with date:",
             clickedDate
-          );
-          console.log(
-            "DEBUG: Date day of week:",
-            clickedDate.getDay(),
-            "Date:",
-            clickedDate.getDate()
           );
           onChartDateChange(clickedDate);
         } else if (onDayChange) {
-          // Fallback to old method if new handler not available
           console.log(
-            "DEBUG: Chart calling onDayChange with closestIndex:",
+            "[v0] Chart calling onDayChange with closestIndex:",
             closestIndex
           );
           onDayChange(closestIndex);
-        } else {
-          console.log("DEBUG: No callback handlers available for chart click");
         }
       } else {
         console.log(
-          "DEBUG: Click was too far from any point, closest distance:",
+          "[v0] Chart click too far from any point, closest distance:",
           closestDistance
         );
       }
     },
-    [animatedData, minValue, valueRange, onDayChange, onChartDateChange]
+    [
+      animatedData,
+      minValue,
+      valueRange,
+      onDayChange,
+      onChartDateChange,
+      viewMode,
+    ]
   );
 
   useEffect(() => {

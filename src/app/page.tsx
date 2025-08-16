@@ -64,7 +64,7 @@ export default function Dashboard() {
           setSelectedDay(dayIndex);
           setSelectedDate(today);
           console.log(
-            "[v0] Initialized to current date:",
+            "Initialized to current date:",
             todayStr,
             "week:",
             weekData.week,
@@ -234,23 +234,23 @@ export default function Dashboard() {
   };
 
   const handleDayChange = (dayIndex: number) => {
-    console.log("[v0] handleDayChange called with dayIndex:", dayIndex);
-    console.log("[v0] Current viewMode:", viewMode);
-    console.log("[v0] Current selectedWeek:", selectedWeek);
+    console.log("handleDayChange called with dayIndex:", dayIndex);
+    console.log("Current viewMode:", viewMode);
+    console.log("Current selectedWeek:", selectedWeek);
 
     setSelectedDay(dayIndex);
 
     if (viewMode === "monthly") {
       const currentMonthData = getCurrentMonthDaysOnly();
       console.log(
-        "[v0] Monthly mode - currentMonthData length:",
+        "Monthly mode - currentMonthData length:",
         currentMonthData.length
       );
       if (dayIndex >= 0 && dayIndex < currentMonthData.length) {
         const selectedDateStr = currentMonthData[dayIndex].date;
         const newDate = new Date(selectedDateStr);
         console.log(
-          "[v0] Monthly mode - setting date to:",
+          "Monthly mode - setting date to:",
           newDate,
           "from dateStr:",
           selectedDateStr
@@ -261,12 +261,12 @@ export default function Dashboard() {
       const currentWeekData = allWeeksData.find(
         (week) => week.week === selectedWeek
       );
-      console.log("[v0] Weekly mode - currentWeekData:", currentWeekData);
+      console.log("Weekly mode - currentWeekData:", currentWeekData);
 
       if (currentWeekData && currentWeekData.dates) {
-        console.log("[v0] Available dates:", currentWeekData.dates);
+        console.log("Available dates:", currentWeekData.dates);
         console.log(
-          "[v0] Looking for dayIndex:",
+          "Looking for dayIndex:",
           dayIndex,
           "in dates array of length:",
           currentWeekData.dates.length
@@ -276,7 +276,7 @@ export default function Dashboard() {
           const selectedDateStr = currentWeekData.dates[dayIndex];
           const newSelectedDate = new Date(selectedDateStr);
           console.log(
-            "[v0] Weekly mode - setting date to:",
+            "Weekly mode - setting date to:",
             newSelectedDate,
             "for dayIndex:",
             dayIndex
@@ -284,7 +284,7 @@ export default function Dashboard() {
           setSelectedDate(newSelectedDate);
         } else {
           console.log(
-            "[v0] Invalid dayIndex:",
+            "Invalid dayIndex:",
             dayIndex,
             "for dates array length:",
             currentWeekData.dates.length
@@ -295,21 +295,21 @@ export default function Dashboard() {
   };
 
   const handleChartDateChange = (date: Date) => {
-    console.log("[v0] handleChartDateChange called with date:", date);
+    console.log("handleChartDateChange called with date:", date);
     setSelectedDate(date);
 
     if (viewMode === "weekly") {
       const dateStr = date.toISOString().split("T")[0];
-      console.log("[v0] Looking for dateStr:", dateStr, "in weeks data");
+      console.log("Looking for dateStr:", dateStr, "in weeks data");
 
       for (const weekData of allWeeksData) {
         if (weekData.dates && weekData.dates.includes(dateStr)) {
-          console.log("[v0] Found matching week:", weekData.week);
+          console.log("Found matching week:", weekData.week);
           setSelectedWeek(weekData.week);
 
           const dayIndex = weekData.dates.indexOf(dateStr);
           console.log(
-            "[v0] Chart to calendar sync - dayIndex:",
+            "Chart to calendar sync - dayIndex:",
             dayIndex,
             "for date:",
             dateStr
@@ -320,15 +320,15 @@ export default function Dashboard() {
       }
     } else if (viewMode === "monthly") {
       const dayOfMonth = date.getDate() - 1;
-      console.log("[v0] Monthly chart sync - dayOfMonth:", dayOfMonth);
+      console.log("Monthly chart sync - dayOfMonth:", dayOfMonth);
       setSelectedDay(dayOfMonth);
     }
   };
 
   const handleCalendarDateChange = (date: Date) => {
-    console.log("[v0] handleCalendarDateChange called with date:", date);
+    console.log("handleCalendarDateChange called with date:", date);
     console.log(
-      "[v0] Date details - getDay():",
+      "Date details - getDay():",
       date.getDay(),
       "getDate():",
       date.getDate()
@@ -339,7 +339,7 @@ export default function Dashboard() {
     const day = String(date.getDate()).padStart(2, "0");
     const dateStr = `${year}-${month}-${day}`;
 
-    console.log("[v0] Corrected dateStr:", dateStr);
+    console.log("Corrected dateStr:", dateStr);
     setShowToast(false);
 
     if (viewMode === "monthly") {
@@ -352,25 +352,34 @@ export default function Dashboard() {
         date.getMonth() !== currentViewingMonth ||
         date.getFullYear() !== currentViewingYear
       ) {
-        console.log("[v0] Date outside current viewing month:", dateStr);
+        console.log("Date outside current viewing month:", dateStr);
         setToastMessage("Data does not exist for given date");
         setShowToast(true);
         return;
       }
+
+      const dayOfMonth = date.getDate() - 1; // Convert to 0-based index for the month
+      console.log(
+        "Monthly mode - setting selectedDay to dayOfMonth:",
+        dayOfMonth
+      );
+      setSelectedDay(dayOfMonth);
+      setSelectedDate(date);
+      return;
     }
 
-    console.log("[v0] Looking for dateStr:", dateStr, "in weeks data");
+    console.log("Looking for dateStr:", dateStr, "in weeks data");
 
     let dateFound = false;
     for (const weekData of allWeeksData) {
       if (weekData.dates && weekData.dates.includes(dateStr)) {
-        console.log("[v0] Found matching week:", weekData.week);
+        console.log("Found matching week:", weekData.week);
         setSelectedWeek(weekData.week);
         setSelectedDate(date);
 
         const dayIndex = weekData.dates.indexOf(dateStr);
         console.log(
-          "[v0] Calendar to chart sync - dayIndex:",
+          "Calendar to chart sync - dayIndex:",
           dayIndex,
           "for date:",
           dateStr
@@ -382,7 +391,7 @@ export default function Dashboard() {
     }
 
     if (!dateFound) {
-      console.log("[v0] Date not found in weeks data:", dateStr);
+      console.log("Date not found in weeks data:", dateStr);
       setToastMessage("Data does not exist for given date");
       setShowToast(true);
     }
