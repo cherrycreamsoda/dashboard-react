@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect, useCallback, useMemo, memo } from "react";
-import { getWeekFromDate } from "@/lib/mockData";
+import { getWeekFromDate } from "@lib/mockData";
 import styles from "./Calendar.module.css";
 
 interface CalendarEvent {

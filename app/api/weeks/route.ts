@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const weekNumber = weekParam ? Number.parseInt(weekParam, 10) : 1;
 
   try {
-    const dataPath = path.join(process.cwd(), "src", "data", "weeks.json");
+    const dataPath = path.join(process.cwd(), "data", "weeks.json");
     const jsonData = fs.readFileSync(dataPath, "utf8");
     const { weeks } = JSON.parse(jsonData);
 

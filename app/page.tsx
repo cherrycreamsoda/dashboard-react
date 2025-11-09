@@ -1,13 +1,13 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import styles from "./page.module.css";
-import ProfileIcon from "@/components/ProfileIcon/ProfileIcon";
-import WelcomeBack from "@/components/WelcomeBack/WelcomeBack";
-import Chart from "@/components/Chart/Chart";
-import Calendar from "@/components/Calendar/Calendar";
-import { getCurrentMonthDaysOnly } from "@/lib/mockData";
-import IncomeExpenseButtons from "@/components/Chart/IncomeExpenseButtons";
-import Toast from "@/components/Toast/Toast";
+import ProfileIcon from "@components/ProfileIcon/ProfileIcon";
+import WelcomeBack from "@components/WelcomeBack/WelcomeBack";
+import Chart from "@components/Chart/Chart";
+import Calendar from "@components/Calendar/Calendar";
+import { getCurrentMonthDaysOnly } from "@lib/mockData";
+import IncomeExpenseButtons from "@components/Chart/IncomeExpenseButtons";
+import Toast from "@components/Toast/Toast";
 
 interface ChartDataPoint {
   day: string;

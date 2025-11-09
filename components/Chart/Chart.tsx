@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 import styles from "./Chart.module.css";
-import { getCurrentMonthDaysOnly } from "@/lib/mockData";
+import { getCurrentMonthDaysOnly } from "@lib/mockData";
 import TimeframeButtons from "./TimeframeButtons";
 
 interface ChartDataPoint {
